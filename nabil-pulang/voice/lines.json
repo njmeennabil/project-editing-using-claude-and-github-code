@@ -1,0 +1,42 @@
+[
+ {
+  "id": "v1",
+  "text": "Hari ini, kertas terakhir Nabil di UPM Bintulu.",
+  "asr": "Hari ini, kertas terakhir nabel DUPN bintulu."
+ },
+ {
+  "id": "v2",
+  "text": "Dan ini, penerbangan terakhirnya sebagai seorang pelajar."
+ },
+ {
+  "id": "v3",
+  "text": "1,257 km, merentasi Laut China Selatan.",
+  "say": "Seribu dua ratus lima puluh tujuh kilometer, merentasi Laut China Selatan."
+ },
+ {
+  "id": "v4",
+  "text": "Mendarat di KLIA Terminal 1.",
+  "say": "Mendarat di KLIA, Terminal Satu.",
+  "asr": "Mendarat di KLIE, Terminal 1"
+ },
+ {
+  "id": "v5",
+  "text": "51 km lagi, pulang ke rumah ibunda di Ken Rimba, Shah Alam.",
+  "say": "Lima puluh satu kilometer lagi, pulang ke rumah ibunda di Ken Rimba, Shah Alam.",
+  "asr": "51 km lagi, pulang kerumah Ibunda di Can River, Shah Alam."
+ },
+ {
+  "id": "v6",
+  "text": "Kemudian, perjalanan diteruskan ke Masjid An-Naim, Jeram.",
+  "say": "Kemudian, perjalanan diteruskan ke Masjid An Na'im, Jeram.",
+  "asr": "Kemudian, perjalanan diteruskan ke Masjid N Naim, Jeram."
+ },
+ {
+  "id": "v7",
+  "text": "Nabil pulang bukan untuk bercuti, tetapi untuk memajukan perniagaan keluarga."
+ },
+ {
+  "id": "v8",
+  "text": "Dari pelajar, kepada usahawan."
+ }
+]

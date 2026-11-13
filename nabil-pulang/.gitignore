@@ -1,0 +1,9 @@
+# rebuilt by build.sh (tools/data.py, tools/bake.py, rendering)
+raw/
+assets/*.bin
+assets/*.jpg
+assets/*.png
+out/
+stills/
+.tools/
+events.json

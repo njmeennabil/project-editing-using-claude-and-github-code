@@ -1,0 +1,480 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<title>Nabil Pulang</title>
+<script type="importmap">{"imports":{"three":"/node_modules/three/build/three.module.js","three/addons/":"/node_modules/three/examples/jsm/"}}</script>
+<style>
+@font-face{font-family:Barlow;src:url(fonts/BarlowCondensed-Regular.ttf);font-weight:400}
+@font-face{font-family:Barlow;src:url(fonts/BarlowCondensed-Medium.ttf);font-weight:500}
+@font-face{font-family:Barlow;src:url(fonts/BarlowCondensed-SemiBold.ttf);font-weight:600}
+html,body{margin:0;background:#05080c;overflow:hidden}
+canvas{position:absolute;left:0;top:0;width:1920px;height:1080px}
+</style></head>
+<body>
+<script type="module">
+// Nabil Pulang — one journey along one line (TREATMENT.md). 56 s, 96 bpm, one bar = 2.5 s.
+//   S1 0–5 UPM Bintulu, title · S2 5–12.5 crane up, take-off · S3 12.5–20 the crossing, 1,257 km
+//   S4 20–22.5 dive, landing at KLIA · S5 22.5–32.5 road to Ken Rimba · S6 32.5–37.5 home (the breath)
+//   S7 37.5–45 road to Jeram · S8 45–56 pull-out, the whole line, the closing line
+// ?t0=&t1= renders a slice of the timeline; ?nosubs=1 hides the subtitle shelf (poster).
+import * as THREE from 'three';
+import { makePost } from '/core/three/post.js';
+import { clamp, lerp, seg, ss, eo, eio, track } from '/core/lib.js';
+
+const Wd = 1920, Ht = 1080, Q = new URLSearchParams(location.search);
+const FULL = 56;
+const T0 = +(Q.get('t0') || 0), T1 = Q.has('t1') ? +Q.get('t1') : FULL;
+
+// ---------- data ----------
+const J = u => fetch(u).then(r => r.json()), B = u => fetch(u).then(r => r.arrayBuffer());
+const [WORLD, msel, mbtu, mwide, hsel, hbtu, hwide, CUES, R1, R2] = await Promise.all([
+  J('assets/world.json'), J('assets/sel_meta.json'), J('assets/btu_meta.json'), J('assets/wide_meta.json'),
+  B('assets/sel_height.bin'), B('assets/btu_height.bin'), B('assets/wide_height.bin'), J('voice/cues.json'),
+  J('data/osrm_klia_kenrimba.json'), J('data/osrm_kenrimba_jeram.json')]);
+const EX = 3.0, D2R = Math.PI / 180, KM = WORLD.KM_REF;
+function mercR(lon, lat) { const n = 2 ** WORLD.REF_Z * 256; return [(lon + 180) / 360 * n, (1 - Math.asinh(Math.tan(lat * D2R)) / Math.PI) / 2 * n]; }
+const [OX, OY] = mercR(101.5, 2.99);                       // world origin: the middle of Selangor; x east, z south, km
+function xz(lon, lat) { const [mx, my] = mercR(lon, lat); return [(mx - OX) * KM, (my - OY) * KM]; }
+function unxz(X, Z) { const n = 2 ** WORLD.REF_Z * 256, mx = X / KM + OX, my = Z / KM + OY; return [mx / n * 360 - 180, Math.atan(Math.sinh(Math.PI * (1 - 2 * my / n))) / D2R]; }
+const AREA = [[msel, new Float32Array(hsel)], [mbtu, new Float32Array(hbtu)], [mwide, new Float32Array(hwide)]].map(([m, buf]) => {
+  const [rx0, ry0, rx1, ry1] = m.ref, X0 = (rx0 - OX) * KM, Z0 = (ry0 - OY) * KM, X1 = (rx1 - OX) * KM, Z1 = (ry1 - OY) * KM;
+  return { m, buf, X0, Z0, X1, Z1 };
+});
+const [SEL, BTU, WIDE] = AREA;
+function bil(buf, w, h, gx, gz) {
+  const x0 = Math.max(0, Math.min(w - 2, Math.floor(gx))), z0 = Math.max(0, Math.min(h - 2, Math.floor(gz)));
+  const fx = clamp(gx - x0), fz = clamp(gz - z0);
+  const a = buf[z0 * w + x0], b = buf[z0 * w + x0 + 1], c = buf[(z0 + 1) * w + x0], d = buf[(z0 + 1) * w + x0 + 1];
+  return (a * (1 - fx) + b * fx) * (1 - fz) + (c * (1 - fx) + d * fx) * fz;
+}
+const BLEND_KM = 7;                                         // detailed meshes hand over to the backdrop over their outer 7 km
+const rawH = (A, X, Z) => bil(A.buf, A.m.GW, A.m.GH, (X - A.X0) / (A.X1 - A.X0) * (A.m.GW - 1), (Z - A.Z0) / (A.Z1 - A.Z0) * (A.m.GH - 1));
+const edgeK = (A, X, Z) => ss(Math.min(X - A.X0, A.X1 - X, Z - A.Z0, A.Z1 - Z) / BLEND_KM);
+function hAt(X, Z) {
+  for (const A of [SEL, BTU]) if (X > A.X0 && X < A.X1 && Z > A.Z0 && Z < A.Z1) return lerp(rawH(WIDE, X, Z), rawH(A, X, Z), edgeK(A, X, Z));
+  if (X > WIDE.X0 && X < WIDE.X1 && Z > WIDE.Z0 && Z < WIDE.Z1) return rawH(WIDE, X, Z);
+  return -50;
+}
+const yOf = h => Math.max(h, 0) / 1000 * EX;
+function geo(lon, lat, lift = 0) { const [X, Z] = xz(lon, lat); return new THREE.Vector3(X, yOf(hAt(X, Z)) + lift, Z); }
+
+// places (Nominatim / OpenStreetMap lookups, see FACTS.md)
+const P = {
+  upm: [113.0823, 3.2145], btu: [113.0208, 3.1261], klia: [101.7055, 2.7527], ken: [101.4845, 3.0550], jeram: [101.3151, 3.2264],
+};
+
+// ---------- renderer ----------
+const renderer = new THREE.WebGLRenderer({ antialias: false, preserveDrawingBuffer: true });
+const SS = +(Q.get('ss') || 2);                         // supersampling (2 = final quality)
+renderer.setPixelRatio(SS); renderer.setSize(Wd, Ht);
+renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.25;
+document.body.appendChild(renderer.domElement);
+const scene = new THREE.Scene();
+const HAZE = new THREE.Color(0x66717c);
+scene.background = HAZE.clone();
+scene.fog = new THREE.Fog(HAZE, 300, 900);
+
+const tl = new THREE.TextureLoader();
+const load = u => new Promise((r, e) => tl.load(u, r, undefined, e));
+const tex = {};
+await Promise.all(['sel', 'btu', 'wide'].flatMap(a => ['albedo.jpg', 'water.png', 'shadow.png'].map(async f => { tex[a + '_' + f] = await load(`assets/${a}_${f}`); })));
+for (const a of ['sel', 'btu', 'wide']) { tex[a + '_albedo.jpg'].colorSpace = THREE.SRGBColorSpace; tex[a + '_albedo.jpg'].anisotropy = 16; tex[a + '_shadow.png'].anisotropy = 8; }
+
+function roughFrom(t) {
+  const c = document.createElement('canvas'); c.width = t.image.width; c.height = t.image.height;
+  const g = c.getContext('2d'); g.drawImage(t.image, 0, 0); const id = g.getImageData(0, 0, c.width, c.height);
+  for (let i = 0; i < id.data.length; i += 4) { const w = id.data[i] / 255; id.data[i] = id.data[i + 1] = id.data[i + 2] = 245 * (1 - w) + 200 * w; }
+  g.putImageData(id, 0, 0); return new THREE.CanvasTexture(c);
+}
+const LIGHT_CHUNK = THREE.ShaderChunk.lights_fragment_begin.replaceAll('RE_Direct( directLight,', 'directLight.color *= mix( 1.0, shK, 0.88 );\n\t\tRE_Direct( directLight,');
+const NO = new THREE.Vector4(1, 1, -1, -1);
+// clipA / clipB: rectangles the backdrop leaves to the detailed meshes; edgeR + edgeW: the backdrop melts into the haze at its border
+function terrainMat(a, clipA = NO, clipB = NO, edgeR = NO, edgeW = 0, own = NO, blendW = 0) {
+  const m = new THREE.MeshStandardMaterial({ map: tex[a + '_albedo.jpg'], roughnessMap: roughFrom(tex[a + '_water.png']), roughness: 1, metalness: 0 });
+  m.onBeforeCompile = sh => {
+    Object.assign(sh.uniforms, { tShadow: { value: tex[a + '_shadow.png'] }, clipA: { value: clipA }, clipB: { value: clipB }, edgeR: { value: edgeR }, edgeW: { value: edgeW },
+      tWide: { value: tex['wide_albedo.jpg'] }, tWideSh: { value: tex['wide_shadow.png'] }, wideR: { value: new THREE.Vector4(WIDE.X0, WIDE.Z0, WIDE.X1, WIDE.Z1) }, ownR: { value: own }, blendW: { value: blendW } });
+    sh.vertexShader = 'varying vec3 vWp;\n' + sh.vertexShader.replace('#include <project_vertex>', '#include <project_vertex>\n vWp = (modelMatrix * vec4(transformed, 1.0)).xyz;');
+    sh.fragmentShader = 'uniform sampler2D tShadow, tWide, tWideSh; uniform vec4 clipA, clipB, edgeR, wideR, ownR; uniform float edgeW, blendW; varying vec3 vWp;\n' + sh.fragmentShader
+      .replace('void main() {', `void main() {
+ if (vWp.x > clipA.x && vWp.x < clipA.z && vWp.z > clipA.y && vWp.z < clipA.w) discard;
+ if (vWp.x > clipB.x && vWp.x < clipB.z && vWp.z > clipB.y && vWp.z < clipB.w) discard;`)
+      .replace('#include <map_fragment>', `#include <map_fragment>
+ float shK = texture2D(tShadow, vMapUv).r;
+ if (blendW > 0.) { float e = min(min(vWp.x - ownR.x, ownR.z - vWp.x), min(vWp.z - ownR.y, ownR.w - vWp.z));
+   vec2 uw = vec2((vWp.x - wideR.x) / (wideR.z - wideR.x), 1. - (vWp.z - wideR.y) / (wideR.w - wideR.y));
+   float k = smoothstep(0., blendW, e);
+   diffuseColor.rgb = mix(texture2D(tWide, uw).rgb, diffuseColor.rgb, k); shK = mix(texture2D(tWideSh, uw).r, shK, k); }`)
+      .replace('#include <lights_fragment_begin>', LIGHT_CHUNK)
+      .replace('#include <fog_fragment>', `#include <fog_fragment>
+ if (edgeW > 0.) { float e = min(min(vWp.x - edgeR.x, edgeR.z - vWp.x), min(vWp.z - edgeR.y, edgeR.w - vWp.z)); gl_FragColor.rgb = mix(fogColor, gl_FragColor.rgb, smoothstep(0., edgeW, e)); }`);
+  };
+  return m;
+}
+function terrainMesh(A, mat, dy = 0) {
+  const { m, buf } = A;
+  const g = new THREE.PlaneGeometry(A.X1 - A.X0, A.Z1 - A.Z0, m.GW - 1, m.GH - 1); g.rotateX(-Math.PI / 2);
+  const p = g.attributes.position, cx = (A.X0 + A.X1) / 2, cz = (A.Z0 + A.Z1) / 2, fine = A !== WIDE;
+  for (let i = 0; i < p.count; i++) p.setY(i, yOf(fine ? hAt(p.getX(i) + cx, p.getZ(i) + cz) : buf[i]));
+  g.computeVertexNormals(); const mesh = new THREE.Mesh(g, mat); mesh.position.set((A.X0 + A.X1) / 2, dy, (A.Z0 + A.Z1) / 2); scene.add(mesh); return mesh;
+}
+const inset = (A, k) => new THREE.Vector4(A.X0 + k, A.Z0 + k, A.X1 - k, A.Z1 - k);
+const own = A => new THREE.Vector4(A.X0, A.Z0, A.X1, A.Z1);
+terrainMesh(SEL, terrainMat('sel', NO, NO, NO, 0, own(SEL), BLEND_KM));
+terrainMesh(BTU, terrainMat('btu', NO, NO, NO, 0, own(BTU), BLEND_KM));
+terrainMesh(WIDE, terrainMat('wide', inset(SEL, 1.2), inset(BTU, 1.2), new THREE.Vector4(WIDE.X0, WIDE.Z0, WIDE.X1, WIDE.Z1), 70), -.03);
+const sun = new THREE.DirectionalLight(0xffe2b8, 3.1);
+sun.position.set(140, 60, -90); sun.target.position.set(0, 0, 0);
+scene.add(sun, sun.target, new THREE.HemisphereLight(0x9fb6c8, 0x3e3a22, 0.6));
+
+// ---------- glowing ribbons (the library's 3D Map Explainer technique): width = max(world width, pixel width) ----------
+const camera = new THREE.PerspectiveCamera(28, Wd / Ht, 2, 900);
+const PIXK = 2 * Math.tan(THREE.MathUtils.degToRad(14)) / Ht;
+const RIB_V = `attribute float aSide; attribute vec3 aNorm; attribute float aAlong;
+  uniform float wW, pxW, pixK; varying float vSide, vAlong;
+  void main(){ vec4 wp = modelMatrix * vec4(position, 1.); float pw = length(cameraPosition - wp.xyz) * pixK;
+    float hw = max(wW * .5, pxW * .5 * pw); wp.xyz += aNorm * aSide * hw; vSide = aSide; vAlong = aAlong;
+    gl_Position = projectionMatrix * viewMatrix * wp; }`;
+const RIB_F = `varying float vSide, vAlong; uniform vec3 col; uniform float k, inten, revA, revB, soft, head, headAmt, dash, duty,
+  flowSp, flowLen, flowAmt, flowPh, base, L, endFade, normalA;
+  void main(){
+    float d = vSide; float g = exp(-d * d * k);
+    float vis = smoothstep(revA - soft, revA, vAlong) * (1. - smoothstep(revB, revB + soft, vAlong));
+    if (vis <= 0.) discard;
+    float e = smoothstep(0., endFade, vAlong) * smoothstep(L, L - endFade, vAlong);
+    float a = base;
+    if (dash > 0.) a *= step(fract(vAlong / dash), duty);
+    if (flowAmt > 0.) { float f = fract((vAlong - flowPh) / flowSp); a += flowAmt * smoothstep(1. - flowLen / flowSp, 1., f) * smoothstep(1., .985, f); }
+    a += headAmt * exp(-pow((vAlong - head) / (2.5 * max(1., soft / 2.)), 2.));
+    if (normalA > 0.) { gl_FragColor = vec4(col, normalA * g * vis * e * inten); return; }
+    gl_FragColor = vec4(col * g * a * inten * vis * e, 1.); }`;
+function ribbon(pts, o) {
+  const pos = [], side = [], nrm = [], al = [], idx = []; let L = 0;
+  for (let i = 0; i < pts.length; i++) {
+    const a = pts[Math.max(0, i - 1)], b = pts[Math.min(pts.length - 1, i + 1)];
+    const t = new THREE.Vector3().subVectors(b, a).setY(0); const n = new THREE.Vector3(t.z, 0, -t.x).normalize();
+    if (i) L += pts[i].distanceTo(pts[i - 1]);
+    for (const s of [1, -1]) { pos.push(pts[i].x, pts[i].y, pts[i].z); side.push(s); nrm.push(n.x, n.y, n.z); al.push(L); }
+    if (i) { const q = 2 * i; idx.push(q - 2, q - 1, q, q - 1, q + 1, q); }
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('aSide', new THREE.Float32BufferAttribute(side, 1));
+  g.setAttribute('aNorm', new THREE.Float32BufferAttribute(nrm, 3)); g.setAttribute('aAlong', new THREE.Float32BufferAttribute(al, 1)); g.setIndex(idx);
+  const U = { col: new THREE.Color(o.col ?? 0xffa63d), k: o.k ?? 3, inten: 0, wW: o.wW ?? 0, pxW: o.pxW ?? 2, pixK: PIXK, revA: 0, revB: 1e9, soft: o.soft ?? 2,
+    head: -1e6, headAmt: 0, dash: o.dash ?? 0, duty: o.duty ?? .55, flowSp: o.flowSp ?? 30, flowLen: o.flowLen ?? 6, flowAmt: o.flowAmt ?? 0, flowPh: 0,
+    base: o.base ?? 1, L, endFade: o.endFade ?? .01, normalA: o.normalA ?? 0 };
+  const uniforms = {}; for (const k in U) uniforms[k] = { value: U[k] };
+  const normal = (o.normalA ?? 0) > 0;
+  const m = new THREE.Mesh(g, new THREE.ShaderMaterial({ uniforms, vertexShader: RIB_V, fragmentShader: RIB_F, side: THREE.DoubleSide, transparent: true, depthWrite: false,
+    depthTest: o.depthTest ?? true, blending: normal ? THREE.NormalBlending : THREE.AdditiveBlending, toneMapped: false }));
+  m.renderOrder = o.order ?? 2; m.frustumCulled = false; scene.add(m);
+  m.L = L; m.u = uniforms; return m;
+}
+function arc(pts) { const s = [0]; for (let i = 1; i < pts.length; i++) s.push(s[i - 1] + pts[i].distanceTo(pts[i - 1])); return s; }
+function along(pts, S, s) {
+  s = clamp(s, 0, S[S.length - 1]); let lo = 0, hi = S.length - 1;
+  while (hi - lo > 1) { const mid = (lo + hi) >> 1; if (S[mid] <= s) lo = mid; else hi = mid; }
+  const f = (s - S[lo]) / ((S[hi] - S[lo]) || 1), p = pts[lo].clone().lerp(pts[hi], f);
+  return { p, dir: new THREE.Vector3().subVectors(pts[hi], pts[lo]).normalize() };
+}
+const rv = (r, a) => { for (const k in a) r.u[k].value = a[k]; };
+const AMB = 0xffa63d, AMB2 = 0xffc36b, ICE = 0xd9e6ee;
+
+// ---------- the flight: great circle Bintulu → KLIA (schematic), with a climb and a descent ----------
+const GC_KM = 1257;                                         // great-circle distance (FACTS.md)
+const FLIGHT = (() => {
+  const v = (lo, la) => new THREE.Vector3(Math.cos(la * D2R) * Math.cos(lo * D2R), Math.cos(la * D2R) * Math.sin(lo * D2R), Math.sin(la * D2R));
+  const a = v(...P.btu), b = v(...P.klia), ang = a.angleTo(b), N = 900, air = [], gnd = [];
+  for (let i = 0; i <= N; i++) {
+    const f = i / N, s = Math.sin(ang), q = a.clone().multiplyScalar(Math.sin((1 - f) * ang) / s).add(b.clone().multiplyScalar(Math.sin(f * ang) / s));
+    const lo = Math.atan2(q.y, q.x) / D2R, la = Math.asin(q.z) / D2R, km = f * GC_KM;
+    const alt = 13 * ss(km / 150) * ss((GC_KM - km) / 190);           // cruise drawn at 13 km over the sea
+    const gp = geo(lo, la, .12); air.push(gp.clone().setY(gp.y + alt)); gnd.push(gp.setY(Math.max(gp.y, .05)));
+  }
+  return { air, gnd, S: arc(air), gS: arc(gnd) };
+})();
+const flight = {
+  glow: ribbon(FLIGHT.air, { pxW: 13, k: 3.2, base: .28, soft: 6 }),
+  core: ribbon(FLIGHT.air, { pxW: 2.6, k: 1.2, base: 1.2, flowAmt: 2.0, flowSp: 90, flowLen: 22, col: AMB2, soft: 6 }),
+  track: ribbon(FLIGHT.gnd, { pxW: 1.6, k: 1, base: .5, dash: 9, duty: .5, col: ICE, order: 3, soft: 6 }),
+};
+const FLY_A = 7.5, FLY_B = 22.5;
+const flyS = t => FLIGHT.S.at(-1) * eio(seg(t, FLY_A, FLY_B));
+
+// ---------- the roads: OSRM routes over OpenStreetMap (ODbL) ----------
+function road(osrm) {
+  const raw = osrm.routes[0].geometry.coordinates.map(([lo, la]) => geo(lo, la, .03));
+  const pts = new THREE.CatmullRomCurve3(raw, false, 'centripetal', .2).getSpacedPoints(1600).map(p => { const y = yOf(hAt(p.x, p.z)) + .03; return p.setY(y); });
+  return { pts, S: arc(pts), km: osrm.routes[0].distance / 1000,
+    glow: ribbon(pts, { pxW: 11, k: 3, base: .3, soft: .6 }),
+    core: ribbon(pts, { wW: .03, pxW: 2.6, k: 1.2, base: 1.4, flowAmt: 1.8, flowSp: 4, flowLen: 1, col: AMB2, soft: .6 }) };
+}
+const ROAD1 = road(R1), ROAD2 = road(R2);
+const CAR1 = [25.0, 32.5], CAR2 = [37.5, 42.5];
+const carS = (R, [a, b], t) => R.S.at(-1) * eio(seg(t, a, b));
+const TOTAL_KM = GC_KM + ROAD1.km + ROAD2.km;
+
+// ---------- glyphs: an aircraft and a car, flat and warm white; each keeps about the same size on screen ----------
+const glyphMat = () => new THREE.MeshBasicMaterial({ color: new THREE.Color(0xf4e6cf).multiplyScalar(1.25), toneMapped: false, transparent: true, depthWrite: false, depthTest: false, side: THREE.DoubleSide });
+const plane = (() => {
+  const s = new THREE.Shape();                               // nose toward +x, length 1
+  s.moveTo(.5, 0); s.lineTo(.42, .045); s.lineTo(.08, .055); s.lineTo(-.06, .46); s.lineTo(-.15, .46); s.lineTo(-.1, .055); s.lineTo(-.36, .05);
+  s.lineTo(-.43, .19); s.lineTo(-.49, .19); s.lineTo(-.46, 0); s.lineTo(-.49, -.19); s.lineTo(-.43, -.19); s.lineTo(-.36, -.05); s.lineTo(-.1, -.055);
+  s.lineTo(-.15, -.46); s.lineTo(-.06, -.46); s.lineTo(.08, -.055); s.lineTo(.42, -.045); s.lineTo(.5, 0);
+  const g = new THREE.ShapeGeometry(s, 8); g.rotateX(-Math.PI / 2);
+  const m = glyphMat(), mesh = new THREE.Mesh(g, m); mesh.renderOrder = 6; scene.add(mesh); return { mesh, m };
+})();
+const car = (() => {
+  const s = new THREE.Shape(); const L = .5, Wc = .22, r = .07;
+  s.moveTo(L - r, Wc); s.quadraticCurveTo(L, Wc, L, Wc - r); s.lineTo(L, -Wc + r); s.quadraticCurveTo(L, -Wc, L - r, -Wc);
+  s.lineTo(-L + r, -Wc); s.quadraticCurveTo(-L, -Wc, -L, -Wc + r); s.lineTo(-L, Wc - r); s.quadraticCurveTo(-L, Wc, -L + r, Wc); s.lineTo(L - r, Wc);
+  const g = new THREE.ShapeGeometry(s, 6); g.rotateX(-Math.PI / 2);
+  const m = glyphMat(), mesh = new THREE.Mesh(g, m); mesh.renderOrder = 6; scene.add(mesh); return { mesh, m };
+})();
+function placeGlyph(G, p, dir, size, a) {
+  G.mesh.visible = a > .001; G.m.opacity = a; G.mesh.position.copy(p);
+  G.mesh.rotation.set(0, Math.atan2(-dir.z, dir.x), 0); G.mesh.scale.setScalar(size);
+}
+
+// ---------- camera: one continuous move. keys: t, [log distance km, pitch°, yaw°, target x, target z, target height] ----------
+// yaw 0 = camera south of the target looking north; 90 = east of it looking west
+const at = (lon, lat) => xz(lon, lat);
+const flyAt = t => { const p = along(FLIGHT.air, FLIGHT.S, flyS(t)).p; return [p.x, p.z]; };
+const carAt = (R, w, t) => { const p = along(R.pts, R.S, carS(R, w, t)).p; return [p.x, p.z]; };
+const MID = at(107.3, 2.55);                                 // the overhead view of the whole route (kept south of 6.3° N)
+const MID1 = (() => { const [a, b] = at(...P.klia), [c, d] = at(...P.ken); return [(a + c) / 2, (b + d) / 2]; })();
+const MID2 = (() => { const [a, b] = at(...P.ken), [c, d] = at(...P.jeram); return [(a + c) / 2, (b + d) / 2]; })();
+const CAM = track([
+  [0.0, [Math.log(21), 21, 38, ...at(113.074, 3.204), 0]],
+  [4.6, [Math.log(17), 22, 33, ...at(113.076, 3.206), 0]],
+  [7.5, [Math.log(46), 28, 58, ...at(113.03, 3.14), 0]],
+  [10.0, [Math.log(150), 33, 74, ...flyAt(10.0), 4]],
+  [12.5, [Math.log(330), 37, 78, ...flyAt(12.5), 6]],
+  [15.0, [Math.log(900), 66, 30, ...flyAt(15.0), 0]],
+  [17.6, [Math.log(1640), 83, 3, ...MID, 0]],
+  [19.8, [Math.log(1600), 83, 2, ...at(106.9, 2.57), 0]],
+  [21.3, [Math.log(380), 50, 22, ...at(102.35, 2.82), 0]],
+  [22.6, [Math.log(62), 38, 48, ...at(101.71, 2.77), 0]],
+  [25.0, [Math.log(96), 43, 40, MID1[0] + 5, MID1[1] + 5, 0]],
+  [28.5, [Math.log(94), 42, 38, MID1[0], MID1[1], 0]],
+  [32.0, [Math.log(86), 41, 35, MID1[0] - 4, MID1[1] - 4, 0]],
+  [34.2, [Math.log(21), 33, 31, ...at(...P.ken), 0]],
+  [35.6, [Math.log(16), 34, 28, ...at(...P.ken), 0]],
+  [37.4, [Math.log(15), 33.5, 26, ...at(...P.ken), 0]],
+  [39.5, [Math.log(50), 34, 62, MID2[0] + 3, MID2[1] + 2, 0]],
+  [42.5, [Math.log(48), 31, 76, MID2[0] - 2, MID2[1] - 2, 0]],
+  [44.8, [Math.log(46), 30, 82, MID2[0] - 4, MID2[1] - 3, 0]],
+  [47.3, [Math.log(440), 52, 34, ...at(102.6, 2.9), 0]],
+  [50.2, [Math.log(1660), 83.5, 3, ...MID, 0]],
+  [56.0, [Math.log(1700), 84, 2, ...MID, 0]]]);
+function mapCam(t) {
+  const [ld, pd, yd, X, Z, ty] = CAM(clamp(t, 0, FULL));
+  const d = Math.exp(ld), p = pd * D2R, y = yd * D2R;
+  return { d, cam: new THREE.Vector3(X + Math.sin(y) * Math.cos(p) * d, ty + Math.sin(p) * d, Z + Math.cos(y) * Math.cos(p) * d), tgt: new THREE.Vector3(X, ty, Z) };
+}
+function setCamera(t) {
+  const { d, cam, tgt } = mapCam(t);
+  camera.position.copy(cam);
+  camera.near = Math.max(.2, d * .05); camera.far = d * 6 + 400; camera.lookAt(tgt); camera.updateProjectionMatrix(); camera.updateMatrixWorld();
+  scene.fog.near = d * 1.1; scene.fog.far = d * 3.6 + 60;
+  return d;
+}
+
+// ---------- post ----------
+const post = makePost(renderer, scene, camera, Wd, Ht, { ssaa: SS, ao: false });
+post.dof.maxCoc = 6; post.bloom.strength = .55; post.bloom.radius = .55; post.bloom.threshold = .95;
+const VU = post.vig.uniforms; VU.amt.value = .42; VU.warm.value = .25; VU.sat.value = .94; VU.contrast.value = .12;
+
+// ---------- overlay ----------
+const ov = document.createElement('canvas'); ov.width = Wd * 2; ov.height = Ht * 2; ov.style.width = Wd + 'px'; ov.style.height = Ht + 'px'; document.body.appendChild(ov);
+const g = ov.getContext('2d');
+await Promise.all(['400 20px Barlow', '500 20px Barlow', '600 20px Barlow'].map(f => document.fonts.load(f, 'ABC')));
+const scr = v => { const p = v.clone().project(camera); return [(p.x + 1) / 2 * Wd, (1 - p.y) / 2 * Ht, p.z]; };
+const C = { sea: '#bcdbe6', light: '#f6eee0', amber: '#ffc36b', amberSoft: 'rgba(255,214,150,.92)', ice: '#d9e6ee', dim: 'rgba(240,232,216,.7)', num: '#ffd08a' };
+let TX = [];
+function txt(s, x, y, o) {
+  g.save(); g.font = `${o.w || 500} ${o.size}px Barlow`; g.letterSpacing = (o.sp || 0) + 'px';
+  g.textAlign = o.align || 'center'; g.textBaseline = o.base || 'middle'; g.globalAlpha = clamp(o.a ?? 1); g.fillStyle = o.col || C.light;
+  g.fillText(s, x, y); const w = g.measureText(s).width;
+  const x0 = o.align === 'left' ? x : o.align === 'right' ? x - w : x - w / 2;
+  if ((o.a ?? 1) > .5 && !o.nobox) TX.push({ id: o.id || s, text: s, x0, y0: y - o.size * .6, x1: x0 + w, y1: y + o.size * .6, ...(o.pass ? { pass: true } : {}) });
+  g.restore(); return w;
+}
+const tw = (s, size, w = 500, sp = 0) => { g.save(); g.font = `${w} ${size}px Barlow`; g.letterSpacing = sp + 'px'; const r = g.measureText(s).width; g.restore(); return r; };
+function line(pts, col, w = 1.4, a = 1, dash = null) { g.save(); g.globalAlpha = clamp(a); g.strokeStyle = col; g.lineWidth = w; if (dash) g.setLineDash(dash); g.beginPath(); pts.forEach(([x, y], i) => i ? g.lineTo(x, y) : g.moveTo(x, y)); g.stroke(); g.restore(); }
+function dot(x, y, r, col, a = 1) { g.save(); g.globalAlpha = clamp(a); g.fillStyle = col; g.beginPath(); g.arc(x, y, r, 0, 7); g.fill(); g.restore(); }
+function rings(x, y, t, t0, a, n = 3, R = 34) { const r = seg(t, t0, t0 + 1.6); if (r >= 1 || r <= 0) return; for (let k = 0; k < n; k++) { const q = clamp(r * 1.5 - k * .25); if (q <= 0 || q >= 1) continue; g.save(); g.globalAlpha = a * (1 - q) * .85; g.strokeStyle = C.amber; g.lineWidth = 1.5; g.beginPath(); g.arc(x, y, 5 + R * eo(q), 0, 7); g.stroke(); g.restore(); } }
+const BOTTOM_SAFE = 200;
+const inFrame = (x, y, w = 0) => x > 40 + w && x < Wd - 40 - w && y > 40 && y < Ht - 60;
+
+// map labels: [lon, lat, text, style, from, to]
+const STY = {
+  land: { size: 28, w: 600, sp: 9, col: C.light, a: .82 }, sea: { size: 21, w: 500, sp: 8, col: C.sea, a: .92 },
+  town: { size: 17, w: 600, sp: 4, col: C.light, a: .85 } };
+const LABELS = [
+  [113.035, 3.168, 'BINTULU', 'town', .4, 9.0],
+  [111.95, 4.05, 'LAUT CHINA SELATAN', 'sea', 11.0, 15.9], [113.6, 2.25, 'SARAWAK', 'land', 15.0, 20.3], [102.55, 3.95, 'SEMENANJUNG MALAYSIA', 'land', 15.6, 20.6],
+  [108.0, 4.55, 'LAUT CHINA SELATAN', 'sea', 15.6, 20.3],
+  [101.69, 3.15, 'KUALA LUMPUR', 'town', 23.2, 30.2], [101.43, 2.98, 'KLANG', 'town', 25.0, 31.5], [101.14, 3.02, 'SELAT MELAKA', 'sea', 27.0, 37.0],
+  [101.2, 3.32, 'SELAT MELAKA', 'sea', 39.0, 45.0],
+  [109.6, 1.15, 'LAUT CHINA SELATAN', 'sea', 48.6, 56.5], [113.7, 2.2, 'SARAWAK', 'land', 48.6, 56.5], [102.55, 3.95, 'SEMENANJUNG MALAYSIA', 'land', 48.6, 56.5]];
+function mapLabels(t) {
+  for (const [lo, la, s, kind, a0, a1] of LABELS) {
+    let a = ss(seg(t, a0, a0 + .6)) * (1 - ss(seg(t, a1 - .5, a1))); if (a <= .01) continue;
+    const st = STY[kind], [x, y, z] = scr(geo(lo, la, .3)); if (z > 1) continue;
+    const w = tw(s, st.size, st.w, st.sp), x0 = x - w / 2, x1 = x0 + w;
+    const m = Math.min(x0 - 40, Wd - 40 - x1, y - 40, (x0 < 1100 ? Ht - BOTTOM_SAFE : Ht - 70) - y);
+    a *= ss(seg(m, 0, 50)); if (a <= .01) continue;
+    txt(s, x, y, { ...st, a: a * st.a, id: 'L' + s + a0 });
+  }
+}
+
+// pins: a dot, a ring pulse when it arrives, a leader line out to a two-line label
+// [place, title, sub, t0, t1, dx, dy]
+const PINS = [
+  ['upm', 'UPM KAMPUS BINTULU', 'HARI TERAKHIR SEBAGAI PELAJAR', 0.3, 6.6, -1, -1],
+  ['btu', 'LAPANGAN TERBANG BINTULU', 'BERLEPAS', 5.0, 10.6, -1, 1],
+  ['klia', 'KLIA TERMINAL 1', 'MENDARAT', 22.5, 28.8, 1, 1],
+  ['ken', 'RUMAH IBUNDA', 'KEN RIMBA, SHAH ALAM', 32.5, 38.6, 1, -1],
+  ['jeram', 'MASJID AN-NAIM', 'JERAM', 42.4, 46.6, 1, -1]];
+function pins(t) {
+  for (let [k, title, sub, t0, t1, dx, dy] of PINS) {
+    const a = ss(seg(t, t0, t0 + .35)) * (1 - ss(seg(t, t1 - .5, t1))); if (a <= .01) continue;
+    const [x, y, z] = scr(geo(...P[k], .2)); if (z > 1 || !inFrame(x, y)) continue;
+    rings(x, y, t, t0, a); dot(x, y, 5, C.amber, a); dot(x, y, 2.2, '#fff6e6', a);
+    { const w = Math.max(tw(title, 24, 600, 3.5), tw(sub, 16, 500, 3.5)) + 90; if (dx < 0 && x - w < 40) dx = 1; else if (dx > 0 && x + w > Wd - 40) dx = -1; }
+    const e = eo(seg(t, t0 + .15, t0 + .6)), lx = x + dx * 70 * e, ly = y + dy * 62 * e;
+    line([[x + dx * 6, y + dy * 6], [lx, ly]], 'rgba(255,214,150,.85)', 1.2, a);
+    const la = a * ss(seg(t, t0 + .4, t0 + .8)), al = dx > 0 ? 'left' : 'right', ox = dx * 10;
+    txt(title, lx + ox, ly + (dy > 0 ? 10 : -26), { size: 24, w: 600, sp: 3.5, align: al, col: C.light, a: la, id: 'pin-' + k });
+    txt(sub, lx + ox, ly + (dy > 0 ? 38 : 2), { size: 16, w: 500, sp: 3.5, align: al, col: C.amberSoft, a: la, id: 'pins-' + k });
+  }
+}
+// a quiet dot for every stop while the whole line is held (S3 and S8)
+function stopDots(t) {
+  const a = ss(seg(t, 14.5, 15.3)) * (1 - ss(seg(t, 20.3, 20.9))) + ss(seg(t, 48.4, 49.2));
+  if (a <= .01) return;
+  for (const k of ['btu', 'klia', 'ken', 'jeram']) { if (t < 30 && (k === 'ken' || k === 'jeram')) continue; const [x, y] = scr(geo(...P[k], .2)); dot(x, y, 3.6, C.amber, a); }
+}
+
+// the title (S1): set in the sky/sea space, tied to the UPM pin by its leader
+function title(t) {
+  const a = ss(seg(t, 1.0, 1.6)) * (1 - ss(seg(t, 5.6, 6.3))); if (a <= 0) return;
+  const X = 150, Y = 236;
+  txt('18 NOVEMBER 2026', X + 2, Y - 54, { size: 18, w: 500, sp: 5, align: 'left', col: C.amberSoft, a, id: 't-date' });
+  txt('NABIL PULANG', X, Y, { size: 72, w: 600, sp: 8, align: 'left', col: C.light, a: a * ss(seg(t, 1.2, 1.8)), id: 't-title' });
+  g.save(); g.globalAlpha = a; g.fillStyle = C.amber; g.fillRect(X + 2, Y + 50, 90 * eo(seg(t, 1.3, 2.0)), 3); g.restore();
+}
+
+// flight label (S2–S3), riding with the aircraft
+function flightLabel(t) {
+  const a = ss(seg(t, 8.4, 8.9)) * (1 - ss(seg(t, 14.4, 14.9))); if (a <= 0) return;
+  const p = along(FLIGHT.air, FLIGHT.S, flyS(t)).p, [x, y] = scr(p);
+  const lx = x + 46, ly = y - 64;
+  line([[x + 8, y - 8], [lx - 4, ly + 14]], 'rgba(255,214,150,.85)', 1.2, a);
+  txt('MH1327', lx, ly - 4, { size: 30, w: 600, sp: 4, align: 'left', col: C.light, a, id: 'fl-no' });
+  txt('MALAYSIA AIRLINES · BINTULU → KLIA', lx + 1, ly + 24, { size: 16, w: 500, sp: 3, align: 'left', col: C.amberSoft, a, id: 'fl-sub' });
+}
+
+// measurements: a line grows from its middle, end ticks snap on, then the label beside it
+function measure(t, A3, B3, t0, t1, num, sub, id, off = 46, labelK = .5, labelDy = -1) {
+  const out = 1 - ss(seg(t, t1 - .5, t1)); const mk = seg(t, t0, t0 + .9); if (mk <= 0 || out <= 0) return;
+  let [ax, ay, az] = scr(A3), [bx, by, bz] = scr(B3);
+  if (az > 1 || bz > 1 || !inFrame(ax, ay) || !inFrame(bx, by)) return;
+  const ux = bx - ax, uy = by - ay, ul = Math.hypot(ux, uy) || 1; let nx = -uy / ul, ny = ux / ul; if (ny < 0) { nx = -nx; ny = -ny; }   // offset toward the bottom of the frame
+  ax += nx * off; ay += ny * off; bx += nx * off; by += ny * off;
+  const e = eio(mk), mx = (ax + bx) / 2, my = (ay + by) / 2;
+  line([[mx + (ax - mx) * e, my + (ay - my) * e], [mx + (bx - mx) * e, my + (by - my) * e]], 'rgba(246,238,224,.95)', 1.6, out);
+  const tk = ss(seg(t, t0 + .8, t0 + 1.0)) * out;
+  for (const [x, y] of [[ax, ay], [bx, by]]) line([[x - nx * 9, y - ny * 9], [x + nx * 9, y + ny * 9]], 'rgba(246,238,224,.95)', 1.6, tk);
+  const la = ss(seg(t, t0 + .9, t0 + 1.3)) * out;
+  const lx = ax + (bx - ax) * labelK, ly = ay + (by - ay) * labelK + nx * 0 + (labelDy > 0 ? 40 : -44);
+  const wn = tw(num, 56, 600, 2);
+  txt(num, lx - wn / 2, ly, { size: 56, w: 600, sp: 2, align: 'left', col: C.num, a: la, id: id + '-n' });
+  txt(sub, lx, ly + (labelDy > 0 ? 40 : 38), { size: 16, w: 500, sp: 3.5, col: C.light, a: la, id: id + '-s' });
+}
+
+// the subtitle shelf: one Malay line, left-aligned like a map legend, on a soft dark floor
+function subtitles(t) {
+  const c = CUES.find(c => t >= c.t0 - .12 && t < c.t1 + .12);
+  g.save(); const gr = g.createLinearGradient(0, Ht - 240, 0, Ht); gr.addColorStop(0, 'rgba(6,10,15,0)'); gr.addColorStop(1, 'rgba(6,10,15,.55)');
+  g.fillStyle = gr; g.fillRect(0, Ht - 240, Wd, 240); g.restore();
+  if (!c) return;
+  const a = ss(seg(t, c.t0 - .12, c.t0 + .08)) * (1 - ss(seg(t, c.t1 - .08, c.t1 + .12)));
+  const X = 96, Y = Ht - 96;
+  g.save(); g.globalAlpha = a; g.fillStyle = C.amber; g.fillRect(X - 22, Y - 26, 3, 52); g.restore();
+  txt(c.text, X, Y, { size: 38, w: 500, sp: 1.2, align: 'left', col: C.light, a, id: 'sub', nobox: true });
+}
+function credits(t) {
+  const a = ss(seg(t, .6, 1.4));
+  txt('KETINGGIAN AWS TERRAIN TILES · IMEJ SENTINEL-2 CLOUDLESS 2016 BY EOX (CC BY 4.0) · JALAN © OPENSTREETMAP CONTRIBUTORS (ODbL) VIA OSRM · LALUAN PENERBANGAN SKEMATIK · MENEGAK ×3',
+    Wd - 40, Ht - 26, { size: 11.5, w: 500, sp: 1.1, align: 'right', col: 'rgba(240,232,216,.55)', base: 'alphabetic', a, id: 'credits', pass: true });
+}
+// S8: the total and the closing line, set in the sea above the route
+function finale(t) {
+  const a = ss(seg(t, 47.6, 48.2)); if (a <= 0) return;
+  const X = 960, Y = 168;
+  txt('≈ ' + Math.round(TOTAL_KM).toLocaleString('en-US') + ' KM', X, Y, { size: 96, w: 600, sp: 3, col: C.num, a, id: 'f-total' });
+  txt('BINTULU → KLIA → SHAH ALAM → JERAM', X, Y + 66, { size: 20, w: 600, sp: 5, col: C.light, a: a * ss(seg(t, 48.0, 48.5)), id: 'f-route' });
+  const b = ss(seg(t, 50.4, 51.1));
+  g.save(); g.globalAlpha = b; g.fillStyle = C.amber; g.fillRect(X - 60 * eo(seg(t, 50.4, 51.2)), Y + 104, 120 * eo(seg(t, 50.4, 51.2)), 3); g.restore();
+  txt('DARI PELAJAR, KEPADA USAHAWAN.', X, Y + 150, { size: 46, w: 600, sp: 6, col: C.light, a: b, id: 'f-close' });
+}
+
+// ---------- the frame at film time t ----------
+function frame(t) {
+  TX = [];
+  const dist = setCamera(t);
+  // the flight line draws behind the aircraft, then stays lit
+  const s = flyS(t), flyOn = t >= FLY_A - .1 ? 1 : 0, head = s;
+  const flyFade = 1 - .45 * ss(seg(t, 23.5, 25.5)) + .45 * ss(seg(t, 45.0, 48.0));
+  rv(flight.glow, { revB: head, inten: flyOn * flyFade, head, headAmt: 1.2 * (1 - ss(seg(t, 21.5, 22.6))), flowPh: t * 160 });
+  rv(flight.core, { revB: head, inten: flyOn * flyFade, head, headAmt: 1.6 * (1 - ss(seg(t, 21.5, 22.6))), flowPh: t * 160 });
+  rv(flight.track, { revB: FLIGHT.gS.at(-1) * s / FLIGHT.S.at(-1), inten: flyOn * .5 * (1 - ss(seg(dist, 900, 1400))) * (1 - ss(seg(t, 22.0, 23.0))) });
+  // the aircraft
+  { const A = along(FLIGHT.air, FLIGHT.S, s), a = ss(seg(t, FLY_A - .4, FLY_A)) * (1 - ss(seg(t, FLY_B + .2, FLY_B + .9)));
+    placeGlyph(plane, A.p.clone().setY(A.p.y + .05), A.dir, dist * .026, a); }
+  // roads ignite on the downbeats, then hold (dimmer while the next one runs)
+  for (const [R, w, hold] of [[ROAD1, CAR1, 1], [ROAD2, CAR2, 1]]) {
+    const cs = carS(R, w, t), on = t >= w[0] - .05 ? 1 : 0, near = lerp(1, .65, ss(seg(dist, 200, 900)));
+    const k = 1 + .5 * ss(seg(t, 45.0, 48.0));
+    rv(R.glow, { revB: cs, inten: on * near * k, head: cs, headAmt: 1.3 * (1 - ss(seg(t, w[1] - .3, w[1] + .2))), flowPh: t * 12 });
+    rv(R.core, { revB: cs, inten: on * k, head: cs, headAmt: 1.8 * (1 - ss(seg(t, w[1] - .3, w[1] + .2))), flowPh: t * 12 });
+  }
+  { const R = t < 35 ? ROAD1 : ROAD2, w = t < 35 ? CAR1 : CAR2, A = along(R.pts, R.S, carS(R, w, t));
+    const a = t < 35 ? ss(seg(t, CAR1[0] - .3, CAR1[0])) * (1 - ss(seg(t, CAR1[1] + .4, CAR1[1] + 1.0))) : ss(seg(t, CAR2[0] - .3, CAR2[0])) * (1 - ss(seg(t, CAR2[1] + .4, CAR2[1] + 1.0)));
+    placeGlyph(car, A.p.clone().setY(A.p.y + .04), A.dir, dist * .012, a); }
+  // depth of field: proportional to distance; a little shallower in the low road shots
+  post.dof.focus = dist; post.dof.aper = dist * (t > 24 && t < 45 ? 5 : 2.5);
+  post.bloom.strength = .55;
+  VU.fade.value = ss(seg(t, 0, .5)) * (1 - ss(seg(t, FULL - .9, FULL)));
+  post.composer.render();
+  // overlay
+  g.setTransform(2, 0, 0, 2, 0, 0); g.clearRect(0, 0, Wd, Ht);
+  g.save(); g.globalAlpha = 1 - ss(seg(t, FULL - .9, FULL));
+  mapLabels(t); stopDots(t); pins(t); title(t); flightLabel(t);
+  measure(t, geo(...P.btu, .2), geo(...P.klia, .2), 15.4, 20.4, '1,257 KM', 'BINTULU → KLIA · JARAK LURUS', 'm-air', 40, .5, 1);
+  measure(t, geo(...P.klia, .2), geo(...P.ken, .2), 28.4, 32.3, Math.round(ROAD1.km) + ' KM', 'KLIA → KEN RIMBA · IKUT JALAN', 'm-r1', 70, .5, 1);
+  measure(t, geo(...P.ken, .2), geo(...P.jeram, .2), 40.4, 45.0, Math.round(ROAD2.km) + ' KM', 'KEN RIMBA → JERAM · IKUT JALAN', 'm-r2', 60, .5, 1);
+  finale(t);
+  if (!Q.has('nosubs')) subtitles(t);
+  credits(t);
+  g.restore();
+  const fo = ss(seg(t, FULL - .9, FULL)); if (fo > 0) { g.save(); g.globalAlpha = fo; g.fillStyle = '#000'; g.fillRect(0, 0, Wd, Ht); g.restore(); }
+}
+
+window.DUR = T1 - T0;
+window.render = t => frame(t + T0);
+window.TEXTS = t => { window.render(t); return TX.map(o => ({ ...o })); };
+// cue events for the mixer, on the film timeline
+const EVF = [
+  { t: 0, type: 'open' }, { t: 0.3, type: 'pin', pan: .2 }, { t: 1.0, type: 'title' }, { t: 5.0, type: 'crane' }, { t: 5.0, type: 'pin', pan: .1 },
+  { t: 7.5, type: 'ignite' }, { t: 7.5, type: 'takeoff' }, { t: 8.4, type: 'tick' }, { t: 12.5, type: 'whoosh' },
+  { t: 15.4, type: 'ruler' }, { t: 16.3, type: 'tick' }, { t: 20.0, type: 'dive' }, { t: 22.5, type: 'touchdown' }, { t: 22.5, type: 'pin', pan: -.1 },
+  { t: 25.0, type: 'ignite', small: 1 }, { t: 25.0, type: 'car', end: CAR1[1] }, { t: 28.4, type: 'ruler' }, { t: 29.3, type: 'tick' },
+  { t: 32.5, type: 'home' }, { t: 37.5, type: 'ignite', small: 1 }, { t: 37.5, type: 'car', end: CAR2[1] }, { t: 40.4, type: 'ruler' }, { t: 41.3, type: 'tick' },
+  { t: 42.4, type: 'pin', pan: -.3 }, { t: 45.0, type: 'rise' }, { t: 47.6, type: 'total' }, { t: 50.4, type: 'close' }, { t: 50.0, type: 'final' }];
+window.EV = EVF.map(e => ({ ...e, t: e.t - T0 })).filter(e => e.t >= 0 && e.t <= T1 - T0);
+window.render(0);
+window.READY = true;
+</script>
+</body></html>

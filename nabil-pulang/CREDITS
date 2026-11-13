@@ -1,0 +1,39 @@
+Nabil Pulang · third-party data, assets and sources
+
+## Map data and imagery (downloaded by tools/data.py into raw/ and processed into assets/)
+- Elevation and bathymetry: AWS Terrain Tiles (Mapzen / Tilezen "terrarium" PNG), https://registry.opendata.aws/terrain-tiles/
+  zoom 11 (Selangor, Bintulu) and zoom 8 (the region). Sources include SRTM (public domain), GMTED, ETOPO1 and GEBCO;
+  attribution as required by the terrain-tiles documentation.
+- Imagery: Sentinel-2 cloudless 2016 - https://s2maps.eu by EOX IT Services GmbH (Contains modified Copernicus Sentinel data
+  2016 & 2017), CC BY 4.0. Layer s2cloudless_3857, zoom 12 (Selangor, Bintulu) and zoom 9 (the region).
+- Roads: © OpenStreetMap contributors, Open Database License (ODbL) 1.0, routed by OSRM (router.project-osrm.org).
+  The two routes are kept in data/ (ODbL: if you share that data, credit OpenStreetMap and keep the same licence).
+- Place coordinates: © OpenStreetMap contributors (ODbL), looked up with Nominatim.
+- No borders are drawn. The flight path is schematic.
+- The film carries a credit line in the bottom-right corner throughout.
+- Every download URL and date is logged in raw/manifest.jsonl.
+
+## Facts
+- FACTS.md: every place, number and distance, with its source or the measurement that produced it.
+
+## Voice
+- Microsoft Edge neural text-to-speech, voice ms-MY-OsmanNeural, through edge-tts (LGPL-3.0, https://github.com/rany2/edge-tts)
+  and the library's core/tts/tts_zh.py. Microsoft's online service: check Microsoft's terms before commercial use.
+  Script: voice/lines.json. Speech check: faster-whisper "small" (MIT; OpenAI Whisper weights, MIT).
+
+## Music samples (CC0; credit not required, given with thanks)
+- VS Chamber Orchestra: Community Edition (Versilian Studios): contrabass (arco, pizzicato), cellos (arco, spiccato), horn, timpani.
+- Versilian Community Sample Library (Versilian Studios): hand chimes, bowed vibraphone, glockenspiel, harp, frame drum.
+- Ambience, foley and the sine pedal are procedural (core/audio/sfx.py and mix.py).
+
+## Fonts (SIL Open Font License 1.1; licence text in fonts/OFL-barlow.txt)
+- Barlow Condensed Regular / Medium / SemiBold: The Barlow Project Authors, https://github.com/google/fonts/tree/main/ofl/barlowcondensed
+
+## Code
+- three.js r170 (MIT), from the Lemo-Opuscar library's node_modules. Post-processing: the library's core/three/post.js.
+- Terrain, ribbon and overlay techniques adapted from the library's 3D Map Explainer style tools.
+- Mastering: a static ffmpeg build from imageio-ffmpeg (ffmpeg is LGPL/GPL), kept in .tools/ (not part of the film).
+
+## Images, models
+- No photographs other than the satellite mosaics above, no 3D models, no AI-generated images. The aircraft, the car,
+  the routes, pins and type are drawn in code.

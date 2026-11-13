@@ -1,0 +1,58 @@
+[
+ {
+  "id": "v1",
+  "t0": 0.8,
+  "t1": 6.22,
+  "vo_end": 4.62,
+  "text": "Hari ini, kertas terakhir Nabil di UPM Bintulu."
+ },
+ {
+  "id": "v2",
+  "t0": 6.3,
+  "t1": 11.457,
+  "vo_end": 9.857,
+  "text": "Dan ini, penerbangan terakhirnya sebagai seorang pelajar."
+ },
+ {
+  "id": "v3",
+  "t0": 13.0,
+  "t1": 19.394,
+  "vo_end": 17.794,
+  "text": "1,257 km, merentasi Laut China Selatan."
+ },
+ {
+  "id": "v4",
+  "t0": 22.9,
+  "t1": 26.52,
+  "vo_end": 25.849,
+  "text": "Mendarat di KLIA Terminal 1."
+ },
+ {
+  "id": "v5",
+  "t0": 26.6,
+  "t1": 33.663,
+  "vo_end": 32.063,
+  "text": "51 km lagi, pulang ke rumah ibunda di Ken Rimba, Shah Alam."
+ },
+ {
+  "id": "v6",
+  "t0": 37.8,
+  "t1": 43.466,
+  "vo_end": 41.866,
+  "text": "Kemudian, perjalanan diteruskan ke Masjid An-Naim, Jeram."
+ },
+ {
+  "id": "v7",
+  "t0": 45.3,
+  "t1": 51.02,
+  "vo_end": 50.342,
+  "text": "Nabil pulang bukan untuk bercuti, tetapi untuk memajukan perniagaan keluarga."
+ },
+ {
+  "id": "v8",
+  "t0": 51.1,
+  "t1": 54.867,
+  "vo_end": 53.267,
+  "text": "Dari pelajar, kepada usahawan."
+ }
+]
