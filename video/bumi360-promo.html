@@ -465,6 +465,20 @@ function remap(T) {
 }
 const REC_FROM = 13.8, REC_TO = 38.2; // phone screen shows the real screen recording
 
+/* Shorter cuts: render.js sets window.CUT = {anchors: [[t43, tCut], ...], slide: [a, b]}
+   and calls renderCut(tCut). Pictures follow the shortened voice-over word by word. */
+let OUT_T = null;
+window.renderCut = function (tc) {
+  const A = window.CUT.anchors;
+  let T = 43;
+  for (let i = 1; i < A.length; i++) {
+    const [o0, n0] = A[i - 1], [o1, n1] = A[i];
+    if (tc <= n1) { T = n1 === n0 ? o1 : o0 + ((o1 - o0) * (tc - n0)) / (n1 - n0); break; }
+  }
+  OUT_T = tc;
+  window.renderAt(T);
+};
+
 window.renderAt = function (T) {
   const t = remap(T);
   /* World: on 0–11, back for the ending 26.9–30 */
@@ -536,7 +550,7 @@ window.renderAt = function (T) {
 
   /* Phone: rises 9.8–10.9, slides out 26.8–27.4 */
   const rise = eio(p(t, 9.8, 10.9));
-  const leave = eio(p(T, 36.5, 37.2));
+  const leave = window.CUT ? eio(p(OUT_T, window.CUT.slide[0], window.CUT.slide[1])) : eio(p(T, 36.5, 37.2));
   const phoneX = lerp(-420, 0, rise) + leave * 900, phoneY = lerp(760, 0, rise), phoneS = lerp(0.45, 1, rise);
   set($("phone"), p(t, 9.8, 10.1), phoneX, phoneY, phoneS);
   const rec = T >= REC_FROM && T < REC_TO;

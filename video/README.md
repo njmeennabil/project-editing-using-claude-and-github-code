@@ -1,7 +1,12 @@
 # Video promosi BUMI360
 
-Video animasi ~43 saat (1920×1080, 30 fps) dalam gaya hitam putih BUMI360, dari sudut pandang
-seorang petani di Sarawak, dengan voice-over pasukan dan rakaman skrin website sebenar.
+Video animasi dalam gaya hitam putih BUMI360 (1920×1080, 30 fps), dari sudut pandang seorang petani
+di Sarawak, dengan voice-over pasukan dan rakaman skrin website sebenar. Dua versi:
+
+| Versi | Fail | Isi |
+|---|---|---|
+| Penuh, ~43 saat | `bumi360-promo.mp4` | VO pada kelajuan asal |
+| **30 saat** | `bumi360-promo-30s.mp4` | Jeda panjang dalam VO dipendekkan, VO 1.25× lebih laju, **dengan kesan bunyi** |
 
 | Fail | Kegunaan |
 |---|---|
@@ -10,7 +15,9 @@ seorang petani di Sarawak, dengan voice-over pasukan dan rakaman skrin website s
 | `assets/voiceover.m4a` | 7 VO yang dipotong dan disusun mengikut babak |
 | `assets/screen-track.mp4` | Klip rakaman skrin website untuk skrin telefon (babak 4–6) |
 | `prepare.sh` | Bina `assets/` daripada fail VO dan rakaman skrin asal |
-| `render.js` | Gabungkan animasi + rakaman skrin + VO menjadi MP4 |
+| `render.js` | Gabungkan animasi + rakaman skrin + audio menjadi MP4 (`--cut30` untuk versi 30 saat) |
+| `make30.py` | Bina versi 30 saat: pendekkan jeda VO, peta masa (`assets/cut30.json`), rakaman skrin 30 saat, campur kesan bunyi (`assets/audio-30.m4a`) |
+| `sfx.py` | Kesan bunyi yang dijana sendiri (pop, whoosh, syiling, loceng, bip satelit…), tiada fail luar |
 
 ## Babak dan masa
 
@@ -30,8 +37,12 @@ Perlukan Node.js, Playwright (Chromium) dan ffmpeg.
 
 ```bash
 ./prepare.sh /folder/yang/ada/scene1.m4a…scene7.m4a/dan/screenrec.mov
-node render.js
+node render.js                         # versi penuh
+python3 make30.py /folder/yang/sama    # sediakan versi 30 saat
+node render.js --cut30                 # versi 30 saat dengan kesan bunyi
 ```
+
+Kesan bunyi dan masanya disenaraikan dalam `EVENTS` di `make30.py`.
 
 Masa VO dan klip rakaman skrin ditetapkan dalam `prepare.sh`. Masa animasi ditetapkan dalam
 `bumi360-promo.html` (fungsi `renderAt`).
