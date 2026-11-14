@@ -1,0 +1,501 @@
+// Dijana oleh database/export_json.py. Jangan ubah dengan tangan.
+window.DATA_TANAMAN = {
+ "tanaman": [
+  {
+   "id": 1,
+   "kod": "JAGUNG",
+   "nama_bm": "Jagung",
+   "nama_en": "Maize",
+   "nama_saintifik": "Zea mays",
+   "jenis": "bijirin",
+   "menetapkan_n": false,
+   "nutrien_utama": "Nitrogen (N)",
+   "keperluan_n": "Tinggi — pengguna N yang tinggi",
+   "suhu_min_c": 18.0,
+   "suhu_max_c": 33.0,
+   "air_min_mm": 500.0,
+   "air_max_mm": 800.0,
+   "air_sasaran_mm": null,
+   "air_nota": "Tidak tahan banjir; perlukan parit saliran.",
+   "matang_min_hari": 60,
+   "matang_max_hari": 70,
+   "matang_nota": "Tanah rendah Malaysia",
+   "sumber_rujukan": null,
+   "tanah": {
+    "tekstur": "Lom atau lom berpasir",
+    "saliran": "Baik",
+    "ph_min": 5.5,
+    "ph_max": 7.5,
+    "ph_elak_bawah": null,
+    "nota": null
+   },
+   "air_kritikal": [
+    "Berbunga (tasseling)",
+    "Berbunga (silking)"
+   ],
+   "baja_npk": [
+    {
+     "sumber": "TNAU",
+     "keadaan": "Dos rujukan",
+     "n_min": 150.0,
+     "n_max": 150.0,
+     "p2o5_min": 75.0,
+     "p2o5_max": 75.0,
+     "k2o_min": 75.0,
+     "k2o_max": 75.0,
+     "nota": null
+    },
+    {
+     "sumber": "Nepal",
+     "keadaan": "Dos rujukan",
+     "n_min": 160.0,
+     "n_max": 160.0,
+     "p2o5_min": 60.0,
+     "p2o5_max": 60.0,
+     "k2o_min": 40.0,
+     "k2o_max": 40.0,
+     "nota": null
+    }
+   ],
+   "program_baja": [],
+   "nutrien_khusus": [
+    {
+     "nutrien": "Fosforus (P)",
+     "kepentingan": "Penting untuk pertumbuhan akar",
+     "sumber_baja": null,
+     "kadar_min_kg_ha": null,
+     "kadar_max_kg_ha": null,
+     "masa_aplikasi": null
+    },
+    {
+     "nutrien": "Zink (Zn)",
+     "kepentingan": "Sensitif kepada kekurangan zink",
+     "sumber_baja": null,
+     "kadar_min_kg_ha": null,
+     "kadar_max_kg_ha": null,
+     "masa_aplikasi": null
+    }
+   ],
+   "amalan": [
+    {
+     "kategori": "baja",
+     "perkara": "Beri N berperingkat: tidak lebih sepertiga semasa tanam."
+    },
+    {
+     "kategori": "baja",
+     "perkara": "Baki N diberi kira-kira 30 hari selepas tanam."
+    },
+    {
+     "kategori": "air",
+     "perkara": "Sediakan parit saliran — tidak tahan banjir."
+    }
+   ],
+   "jarak": []
+  },
+  {
+   "id": 2,
+   "kod": "SOYA",
+   "nama_bm": "Soya",
+   "nama_en": "Soybean",
+   "nama_saintifik": "Glycine max",
+   "jenis": "legum",
+   "menetapkan_n": true,
+   "nutrien_utama": "Fosforus (P) dan Kalium (K)",
+   "keperluan_n": "Rendah — dibekalkan oleh rhizobium",
+   "suhu_min_c": 26.0,
+   "suhu_max_c": 30.0,
+   "air_min_mm": 500.0,
+   "air_max_mm": 1000.0,
+   "air_sasaran_mm": 700.0,
+   "air_nota": "Sekitar 700 mm untuk hasil tinggi. Perlukan cuaca kering semasa masak.",
+   "matang_min_hari": 100,
+   "matang_max_hari": 130,
+   "matang_nota": null,
+   "sumber_rujukan": null,
+   "tanah": {
+    "tekstur": "Lom, kaya bahan organik",
+    "saliran": "Baik",
+    "ph_min": 6.0,
+    "ph_max": 7.5,
+    "ph_elak_bawah": 4.5,
+    "nota": "Elakkan pH di bawah 4.5 (aluminium toksik)."
+   },
+   "air_kritikal": [
+    "Berbunga",
+    "Pembentukan buah"
+   ],
+   "baja_npk": [
+    {
+     "sumber": "Umum",
+     "keadaan": "Ikut ujian tanah",
+     "n_min": 0.0,
+     "n_max": 20.0,
+     "p2o5_min": 40.0,
+     "p2o5_max": 100.0,
+     "k2o_min": 40.0,
+     "k2o_max": 80.0,
+     "nota": "Baja N tidak lebih 20 kg N/ha."
+    }
+   ],
+   "program_baja": [],
+   "nutrien_khusus": [
+    {
+     "nutrien": "Molibdenum (Mo)",
+     "kepentingan": "Penting untuk penetapan N",
+     "sumber_baja": null,
+     "kadar_min_kg_ha": null,
+     "kadar_max_kg_ha": null,
+     "masa_aplikasi": null
+    }
+   ],
+   "amalan": [
+    {
+     "kategori": "tanam",
+     "perkara": "Inokulasi rhizobium jika tanam kali pertama di kawasan tersebut."
+    },
+    {
+     "kategori": "tuai",
+     "perkara": "Perlukan cuaca kering semasa masak."
+    }
+   ],
+   "jarak": [
+    {
+     "jenis_varieti": null,
+     "antara_baris_min_cm": 40.0,
+     "antara_baris_max_cm": 60.0,
+     "dalam_baris_min_cm": null,
+     "dalam_baris_max_cm": null
+    }
+   ]
+  },
+  {
+   "id": 3,
+   "kod": "KACANG_TANAH",
+   "nama_bm": "Kacang Tanah",
+   "nama_en": "Peanut",
+   "nama_saintifik": "Arachis hypogaea",
+   "jenis": "legum",
+   "menetapkan_n": true,
+   "nutrien_utama": "Kalsium (Ca)",
+   "keperluan_n": "Rendah — menetapkan N sendiri",
+   "suhu_min_c": 28.0,
+   "suhu_max_c": 30.0,
+   "air_min_mm": 500.0,
+   "air_max_mm": 600.0,
+   "air_sasaran_mm": null,
+   "air_nota": "Mesti teragih sekata sepanjang musim.",
+   "matang_min_hari": 150,
+   "matang_max_hari": 150,
+   "matang_nota": "Sekitar 150 hari; bergantung varieti",
+   "sumber_rujukan": null,
+   "tanah": {
+    "tekstur": "Berpasir, kurang 15% liat",
+    "saliran": "Baik",
+    "ph_min": 5.5,
+    "ph_max": 7.0,
+    "ph_elak_bawah": null,
+    "nota": "Liat keras menghalang peg menembusi tanah."
+   },
+   "air_kritikal": [
+    "Berbunga",
+    "Pegging",
+    "Pembentukan buah"
+   ],
+   "baja_npk": [
+    {
+     "sumber": "Umum",
+     "keadaan": "Ikut ujian tanah",
+     "n_min": 8.0,
+     "n_max": 20.0,
+     "p2o5_min": 16.0,
+     "p2o5_max": 80.0,
+     "k2o_min": 0.0,
+     "k2o_max": 75.0,
+     "nota": "N sebagai baja asas (basal)."
+    },
+    {
+     "sumber": "TNAU",
+     "keadaan": "Tiada ujian tanah",
+     "n_min": 25.0,
+     "n_max": 25.0,
+     "p2o5_min": 50.0,
+     "p2o5_max": 50.0,
+     "k2o_min": 75.0,
+     "k2o_max": 75.0,
+     "nota": null
+    }
+   ],
+   "program_baja": [],
+   "nutrien_khusus": [
+    {
+     "nutrien": "Kalsium (Ca)",
+     "kepentingan": "Nutrien paling kritikal",
+     "sumber_baja": "Gipsum",
+     "kadar_min_kg_ha": 200.0,
+     "kadar_max_kg_ha": 400.0,
+     "masa_aplikasi": "Puncak berbunga (40–45 hari selepas tanam)"
+    },
+    {
+     "nutrien": "Zink (Zn)",
+     "kepentingan": "Penambahan berkala",
+     "sumber_baja": "Zink sulfat",
+     "kadar_min_kg_ha": 10.0,
+     "kadar_max_kg_ha": 20.0,
+     "masa_aplikasi": "Sekali setiap tiga tahun"
+    }
+   ],
+   "amalan": [
+    {
+     "kategori": "baja",
+     "perkara": "Baja tidak boleh menyentuh benih secara terus."
+    },
+    {
+     "kategori": "tanah",
+     "perkara": "Elakkan tanah liat keras — menghalang peg menembusi tanah."
+    }
+   ],
+   "jarak": [
+    {
+     "jenis_varieti": "Tegak",
+     "antara_baris_min_cm": 30.0,
+     "antara_baris_max_cm": 40.0,
+     "dalam_baris_min_cm": 10.0,
+     "dalam_baris_max_cm": 15.0
+    },
+    {
+     "jenis_varieti": "Menjalar",
+     "antara_baris_min_cm": 45.0,
+     "antara_baris_max_cm": 60.0,
+     "dalam_baris_min_cm": 15.0,
+     "dalam_baris_max_cm": 20.0
+    }
+   ]
+  },
+  {
+   "id": 4,
+   "kod": "KANGKUNG",
+   "nama_bm": "Kangkung",
+   "nama_en": "Water Spinach",
+   "nama_saintifik": "Ipomoea aquatica",
+   "jenis": "sayur daun",
+   "menetapkan_n": false,
+   "nutrien_utama": "Nitrogen (N)",
+   "keperluan_n": "Perlu N untuk pertumbuhan daun dan batang",
+   "suhu_min_c": 23.0,
+   "suhu_max_c": 30.0,
+   "air_min_mm": null,
+   "air_max_mm": null,
+   "air_sasaran_mm": null,
+   "air_nota": "Perlukan bekalan air mencukupi dan kelembapan tanah yang konsisten. Tidak tahan kekeringan terlalu lama.",
+   "matang_min_hari": 28,
+   "matang_max_hari": 35,
+   "matang_nota": "4–5 minggu selepas menanam",
+   "sumber_rujukan": "Jabatan Pertanian Sarawak",
+   "tanah": {
+    "tekstur": "Gambut, liat ringan atau tanah mineral",
+    "saliran": "Perlu diurus dengan baik",
+    "ph_min": 5.5,
+    "ph_max": 6.5,
+    "ph_elak_bawah": null,
+    "nota": null
+   },
+   "air_kritikal": [],
+   "baja_npk": [
+    {
+     "sumber": "Jabatan Pertanian Sarawak",
+     "keadaan": "Kadar rujukan semusim",
+     "n_min": 75.0,
+     "n_max": 75.0,
+     "p2o5_min": 75.0,
+     "p2o5_max": 75.0,
+     "k2o_min": 75.0,
+     "k2o_max": 75.0,
+     "nota": "Dikira daripada 0.5 t/ha NPK 15:15:15 (500 kg × 15%)."
+    }
+   ],
+   "program_baja": [
+    {
+     "jenis_baja": "Baja organik",
+     "kadar_min": 4.0,
+     "kadar_max": 4.0,
+     "unit": "t/ha",
+     "masa_aplikasi": "Seminggu sebelum menanam",
+     "nota": "Digaul ke dalam tanah."
+    },
+    {
+     "jenis_baja": "NPK 15:15:15",
+     "kadar_min": 0.5,
+     "kadar_max": 0.5,
+     "unit": "t/ha/musim",
+     "masa_aplikasi": "Minggu ke-2 dan ke-3 selepas menanam",
+     "nota": "Kadar rujukan Jabatan Pertanian Sarawak."
+    }
+   ],
+   "nutrien_khusus": [],
+   "amalan": [
+    {
+     "kategori": "tanam",
+     "perkara": "Boleh ditanam sepanjang tahun jika bekalan air dan saliran diuruskan dengan baik."
+    },
+    {
+     "kategori": "air",
+     "perkara": "Pengairan secara manual atau sistem pemercik."
+    },
+    {
+     "kategori": "air",
+     "perkara": "Elakkan kekeringan terlalu lama; kekalkan kelembapan tanah."
+    },
+    {
+     "kategori": "baja",
+     "perkara": "Gaul baja organik ke dalam tanah seminggu sebelum menanam."
+    },
+    {
+     "kategori": "baja",
+     "perkara": "Beri NPK pada minggu ke-2 dan ke-3 selepas menanam."
+    }
+   ],
+   "jarak": [
+    {
+     "jenis_varieti": null,
+     "antara_baris_min_cm": 20.0,
+     "antara_baris_max_cm": 20.0,
+     "dalam_baris_min_cm": 10.0,
+     "dalam_baris_max_cm": 10.0
+    }
+   ]
+  },
+  {
+   "id": 5,
+   "kod": "SAWI",
+   "nama_bm": "Sawi",
+   "nama_en": "Mustard Greens",
+   "nama_saintifik": "Brassica juncea",
+   "jenis": "sayur daun",
+   "menetapkan_n": false,
+   "nutrien_utama": "Nitrogen (N)",
+   "keperluan_n": "Perlu N untuk pertumbuhan daun",
+   "suhu_min_c": 20.0,
+   "suhu_max_c": 30.0,
+   "air_min_mm": null,
+   "air_max_mm": null,
+   "air_sasaran_mm": null,
+   "air_nota": "Perlukan bekalan air konsisten untuk pertumbuhan daun. Elakkan tanah terlalu kering atau air bertakung.",
+   "matang_min_hari": null,
+   "matang_max_hari": null,
+   "matang_nota": null,
+   "sumber_rujukan": null,
+   "tanah": {
+    "tekstur": "Lom subur, kaya bahan organik",
+    "saliran": "Baik",
+    "ph_min": 5.5,
+    "ph_max": 6.5,
+    "ph_elak_bawah": null,
+    "nota": "pH sekitar 5.5–6.5 sebagai sasaran pengurusan tanah."
+   },
+   "air_kritikal": [],
+   "baja_npk": [],
+   "program_baja": [
+    {
+     "jenis_baja": "Baja organik (tahi ayam dikomposkan)",
+     "kadar_min": 1.0,
+     "kadar_max": 2.0,
+     "unit": "kg/m²",
+     "masa_aplikasi": "Sebelum menanam",
+     "nota": null
+    },
+    {
+     "jenis_baja": "Dolomit",
+     "kadar_min": 100.0,
+     "kadar_max": 200.0,
+     "unit": "g/m²",
+     "masa_aplikasi": "Sebelum menanam",
+     "nota": "Membantu pengurusan pH; membekalkan kalsium dan magnesium."
+    },
+    {
+     "jenis_baja": "NPK",
+     "kadar_min": 30.0,
+     "kadar_max": 30.0,
+     "unit": "g/m²",
+     "masa_aplikasi": "Sebelum menanam",
+     "nota": "Gred NPK tidak dinyatakan."
+    },
+    {
+     "jenis_baja": "Baja tambahan",
+     "kadar_min": 30.0,
+     "kadar_max": 40.0,
+     "unit": "g/m²/minggu",
+     "masa_aplikasi": "Setiap minggu sehingga menuai",
+     "nota": "Sesuaikan dengan keadaan tanah dan pertumbuhan tanaman."
+    }
+   ],
+   "nutrien_khusus": [
+    {
+     "nutrien": "Fosforus (P)",
+     "kepentingan": "Membantu perkembangan akar",
+     "sumber_baja": null,
+     "kadar_min_kg_ha": null,
+     "kadar_max_kg_ha": null,
+     "masa_aplikasi": null
+    },
+    {
+     "nutrien": "Kalium (K)",
+     "kepentingan": "Membantu pertumbuhan dan ketahanan tanaman",
+     "sumber_baja": null,
+     "kadar_min_kg_ha": null,
+     "kadar_max_kg_ha": null,
+     "masa_aplikasi": null
+    },
+    {
+     "nutrien": "Kalsium dan Magnesium (Ca, Mg)",
+     "kepentingan": "Dibekalkan melalui dolomit",
+     "sumber_baja": "Dolomit",
+     "kadar_min_kg_ha": 1000.0,
+     "kadar_max_kg_ha": 2000.0,
+     "masa_aplikasi": "Sebelum menanam (100–200 g/m²)"
+    }
+   ],
+   "amalan": [
+    {
+     "kategori": "air",
+     "perkara": "Elakkan tanah terlalu kering atau air bertakung."
+    },
+    {
+     "kategori": "baja",
+     "perkara": "Pembajaan perlu disesuaikan dengan keadaan tanah dan pertumbuhan tanaman."
+    },
+    {
+     "kategori": "tanah",
+     "perkara": "Guna dolomit untuk mengurus pH tanah."
+    }
+   ],
+   "jarak": [
+    {
+     "jenis_varieti": null,
+     "antara_baris_min_cm": null,
+     "antara_baris_max_cm": null,
+     "dalam_baris_min_cm": 20.0,
+     "dalam_baris_max_cm": 25.0
+    }
+   ]
+  }
+ ],
+ "giliran": [
+  {
+   "sebelum": "Kacang Tanah",
+   "selepas": "Jagung",
+   "kesan_hasil_peratus": 25.0,
+   "nota": "Tanaman selepas kacang tanah dilaporkan meningkat hasil sekitar 25%."
+  },
+  {
+   "sebelum": "Soya",
+   "selepas": "Jagung",
+   "kesan_hasil_peratus": null,
+   "nota": "Legum dahulu menambah N dalam tanah untuk jagung."
+  }
+ ],
+ "nota_giliran": [
+  "Soya dan kacang tanah ialah legum yang menambah N dalam tanah.",
+  "Tanaman selepas kacang tanah dilaporkan meningkat hasil sekitar 25%.",
+  "Susunan biasa: legum dahulu, kemudian jagung."
+ ]
+};
