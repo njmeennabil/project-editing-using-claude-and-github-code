@@ -1,0 +1,669 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>BUMI360 promo animation</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap">
+<style>
+/* 30-second BUMI360 promo, 1920x1080. Black-and-white, matching the website.
+   Every frame is drawn by renderAt(t) so the video renders the same every time. */
+:root {
+  --bg: #ffffff; --fg: #0a0a0a; --muted: #5c5c5c; --line: #d6d6d6;
+  --band: #cfcfcf; --track: #eeeeee; --soft: #f3f3f3;
+  --display: "Space Grotesk", system-ui, sans-serif;
+  --body: "Inter", system-ui, sans-serif;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { width: 1920px; height: 1080px; overflow: hidden; background: transparent; color: var(--fg); font-family: var(--body); }
+#stage { position: relative; width: 1920px; height: 1080px; overflow: hidden; background: transparent; }
+/* White everywhere except the phone screen, which shows the screen recording composited underneath. */
+#hole { left: 1124px; top: 84px; width: 432px; height: 912px; border-radius: 50px; background: #fff; box-shadow: 0 0 0 4000px #fff; transform-origin: 216px 456px; z-index: 0; }
+#world, .left, #sat, #sat-lab, #beam, #end, #credit { z-index: 1; }
+#phone { z-index: 2; }
+#scr-splash { background: #fff; }
+.abs { position: absolute; }
+.t { will-change: transform, opacity; }
+
+/* ---------- World (farmer scenes) ---------- */
+#world { inset: 0; }
+#ground { left: 0; right: 0; top: 860px; height: 220px; background: var(--soft); border-top: 6px solid var(--fg); }
+#ground::after {
+  content: ""; position: absolute; inset: 40px 0 0 0;
+  background: repeating-linear-gradient(0deg, transparent 0 34px, var(--line) 34px 38px);
+}
+#farmer { left: 230px; top: 250px; width: 400px; height: 700px; }
+.plant { width: 120px; height: 300px; transform-origin: 60px 300px; }
+
+.caption {
+  font-family: var(--display); font-weight: 700; font-size: 78px; line-height: 1.05; letter-spacing: -0.02em;
+  left: 140px; top: 96px; width: 1300px;
+}
+.packet {
+  width: 170px; height: 220px; border: 6px solid var(--fg); border-radius: 16px; background: #fff;
+  display: grid; grid-template-rows: 50px 1fr 50px; overflow: hidden; transform-origin: 50% 100%;
+}
+.packet .top { background: var(--fg); color: #fff; font: 700 22px var(--display); letter-spacing: .12em; display: grid; place-items: center; }
+.packet .mid { display: grid; place-items: center; }
+.packet .lab { font: 700 22px var(--display); letter-spacing: .06em; display: grid; place-items: center; border-top: 3px solid var(--fg); }
+.qm { font: 700 120px/1 var(--display); width: 170px; text-align: center; transform-origin: 50% 100%; }
+
+.coin {
+  width: 74px; height: 74px; border-radius: 50%; background: #fff; border: 6px solid var(--fg);
+  display: grid; place-items: center; font: 700 22px var(--display);
+}
+#calendar { left: 1480px; top: 300px; width: 250px; height: 270px; border: 6px solid var(--fg); border-radius: 18px; background: #fff; overflow: hidden; transform-origin: 50% 0; }
+#calendar .bar { height: 64px; background: var(--fg); }
+#calendar .month { display: grid; place-items: center; height: 200px; font: 700 76px var(--display); transform-origin: 50% 0; }
+
+/* ---------- Phone ---------- */
+#phone {
+  left: 1110px; top: 70px; width: 460px; height: 940px; border: 14px solid var(--fg); border-radius: 64px;
+  background: #fff; overflow: hidden; transform-origin: 50% 50%; box-shadow: 0 30px 80px rgba(0,0,0,.18);
+}
+#notch { position: absolute; top: 10px; left: 50%; width: 120px; height: 28px; margin-left: -60px; border-radius: 20px; background: var(--fg); z-index: 5; }
+.screen { position: absolute; inset: 0; padding: 60px 26px 26px; display: flex; flex-direction: column; }
+.viewport { flex: 1; min-height: 0; overflow: hidden; }
+#scr-splash { display: grid; }
+.appbar { display: flex; align-items: center; gap: 10px; font: 700 26px var(--display); padding-bottom: 16px; border-bottom: 2px solid var(--line); margin-bottom: 22px; }
+.appbar .ham { margin-left: auto; width: 34px; height: 22px; border-top: 4px solid var(--fg); border-bottom: 4px solid var(--fg); position: relative; }
+.appbar .ham::after { content: ""; position: absolute; left: 0; right: 0; top: 5px; border-top: 4px solid var(--fg); }
+.wm b { font-weight: 700; } .wm span { color: var(--muted); font-weight: 500; }
+
+#scr-splash { display: grid; place-items: center; padding: 0; }
+#splash-inner { display: grid; justify-items: center; gap: 22px; }
+#splash-mark { width: 190px; height: 190px; }
+#splash-word { font: 700 64px var(--display); letter-spacing: -0.02em; }
+
+.f-label { font: 600 21px var(--body); margin-bottom: 8px; }
+.f-box {
+  height: 66px; border: 2px solid var(--line); border-radius: 14px; background: var(--soft);
+  display: flex; align-items: center; padding: 0 18px; font: 600 27px var(--body); margin-bottom: 22px; position: relative;
+}
+.f-box.active { border: 3px solid var(--fg); background: #fff; }
+.f-box .unit { margin-left: auto; color: var(--muted); font-weight: 500; font-size: 22px; }
+.f-box .chev { margin-left: auto; width: 14px; height: 14px; border-right: 4px solid var(--fg); border-bottom: 4px solid var(--fg); transform: rotate(45deg) translateY(-4px); }
+.caret { display: inline-block; width: 3px; height: 32px; background: var(--fg); margin-left: 2px; }
+#map { height: 150px; border: 2px solid var(--line); border-radius: 14px; margin: -8px 0 22px; position: relative; overflow: hidden;
+  background:
+    radial-gradient(circle at 70% 40%, var(--soft) 0 30%, transparent 31%),
+    repeating-linear-gradient(0deg, transparent 0 28px, var(--track) 28px 30px),
+    repeating-linear-gradient(90deg, transparent 0 28px, var(--track) 28px 30px), #fff; }
+#map .coast { position: absolute; left: -20px; right: -20px; top: 92px; height: 120px; border-top: 4px solid var(--band); border-radius: 50% 40% 0 0; }
+#pin { position: absolute; left: 240px; top: 26px; width: 44px; height: 60px; }
+#map .pinlab { position: absolute; left: 292px; top: 40px; font: 700 20px var(--display); }
+.btn { height: 70px; border-radius: 14px; background: var(--fg); color: #fff; display: grid; place-items: center; font: 600 26px var(--body); transform-origin: 50% 50%; }
+
+.r-meta { font: 500 18px var(--body); color: var(--muted); margin-bottom: 6px; }
+.r-head { font: 700 30px/1.15 var(--display); margin-bottom: 18px; }
+.card { border: 2px solid var(--line); border-radius: 18px; padding: 16px 18px; margin-bottom: 14px; background: #fff; }
+.card .row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.card .name { font: 700 26px var(--display); }
+.card .local { font: 500 17px var(--body); color: var(--muted); margin-top: 2px; }
+.card .msg { font: 500 19px/1.35 var(--body); margin-top: 12px; }
+.card .msg b { font-weight: 700; }
+.card .nasa { font: 500 15px/1.35 var(--body); color: var(--muted); border: 2px solid var(--line); border-radius: 10px; padding: 8px 10px; margin-top: 12px; }
+.card .nasa b { color: var(--fg); }
+.pill { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; border: 3px solid var(--fg); border-radius: 999px; padding: 5px 12px; font: 700 17px var(--body); }
+.pill.ok { background: var(--fg); color: #fff; }
+.pill.bad { border-style: dashed; }
+.meter { position: relative; height: 14px; border-radius: 7px; background: var(--track); margin-top: 14px; }
+.meter .band { position: absolute; top: 0; bottom: 0; left: 41.7%; width: 25%; background: var(--band); border-radius: 7px; }
+.meter .mark { position: absolute; top: -6px; width: 6px; height: 26px; margin-left: -3px; border-radius: 3px; background: var(--fg); box-shadow: 0 0 0 3px #fff; }
+.meter-lab { display: flex; justify-content: space-between; font: 500 15px var(--body); color: var(--muted); margin-top: 8px; }
+
+.g-title { font: 700 44px var(--display); }
+.g-sub { font: 500 18px var(--body); color: var(--muted); margin: 2px 0 16px; }
+.g-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 18px; }
+.g-stat { border: 2px solid var(--line); border-radius: 14px; padding: 12px 14px; }
+.g-stat .k { font: 700 13px var(--body); letter-spacing: .08em; color: var(--muted); }
+.g-stat .v { font: 700 28px var(--display); margin-top: 4px; }
+.g-h { font: 700 14px var(--body); letter-spacing: .1em; color: var(--muted); margin: 6px 0 8px; }
+.g-row { display: flex; justify-content: space-between; font: 500 20px var(--body); padding: 10px 0; border-bottom: 2px solid var(--line); }
+.g-row b { font-weight: 700; }
+#rot { margin-top: 20px; border: 3px solid var(--fg); border-radius: 16px; padding: 16px 18px; transform-origin: 50% 50%; }
+#rot .flow { font: 700 30px var(--display); display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+#rot .gain { background: var(--fg); color: #fff; border-radius: 999px; font: 700 18px var(--body); padding: 4px 12px; }
+#rot p { font: 500 17px/1.35 var(--body); color: var(--muted); margin-top: 8px; }
+
+/* ---------- Left-side story text ---------- */
+.left { left: 140px; width: 860px; }
+.eyebrow { font: 700 26px var(--body); letter-spacing: .14em; text-transform: uppercase; margin-bottom: 18px; }
+.big { font: 700 96px/1.0 var(--display); letter-spacing: -0.03em; }
+.mid { font: 700 74px/1.05 var(--display); letter-spacing: -0.025em; }
+.sub { font: 500 34px/1.35 var(--body); color: var(--muted); margin-top: 22px; }
+.step { display: flex; align-items: center; gap: 28px; margin-bottom: 30px; }
+.step .num { width: 84px; height: 84px; border-radius: 50%; border: 5px solid var(--fg); display: grid; place-items: center; font: 700 40px var(--display); flex: none; }
+.step .lab { font: 700 56px var(--display); letter-spacing: -0.02em; }
+.step.done .num { background: var(--fg); color: #fff; }
+#nasa-badge { display: inline-flex; align-items: center; gap: 18px; border: 4px solid var(--fg); border-radius: 22px; padding: 16px 24px; margin-top: 12px; }
+#nasa-badge .k { font: 700 32px var(--display); }
+#nasa-badge .s { font: 500 22px var(--body); color: var(--muted); }
+.legend { display: flex; align-items: center; gap: 22px; margin-top: 26px; }
+.legend .pill { font-size: 30px; padding: 8px 22px; border-width: 4px; }
+.legend .what { font: 500 30px var(--body); color: var(--muted); }
+.chip { display: inline-block; border: 4px solid var(--fg); border-radius: 999px; padding: 12px 30px; font: 700 36px var(--display); margin: 0 14px 14px 0; }
+
+#sat { left: 760px; top: 120px; width: 150px; height: 110px; }
+#beam { inset: 0; }
+#sat-lab { font: 700 26px var(--display); letter-spacing: .04em; }
+
+/* ---------- End card ---------- */
+#end { left: 960px; top: 170px; width: 900px; }
+#end .logo { display: flex; align-items: center; gap: 30px; }
+#end .logo svg { width: 150px; height: 150px; }
+#end .logo .word { font: 700 150px/1 var(--display); letter-spacing: -0.04em; }
+#end .tag { font: 700 60px/1.1 var(--display); letter-spacing: -0.02em; margin-top: 30px; }
+#end .facts { font: 500 34px var(--body); color: var(--muted); margin-top: 22px; }
+#end .url { display: inline-block; font: 600 30px var(--body); margin-top: 26px; border: 3px solid var(--fg); border-radius: 14px; padding: 12px 20px; }
+#credit { right: 60px; bottom: 36px; font: 500 24px var(--body); color: var(--muted); }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="hole" class="abs t"></div>
+
+  <!-- ================= WORLD ================= -->
+  <div id="world" class="abs t">
+    <div id="ground" class="abs"></div>
+
+    <div id="plants"></div>
+
+    <svg id="farmer" class="abs" viewBox="0 0 400 700" aria-hidden="true">
+      <!-- legs -->
+      <rect x="150" y="470" width="42" height="200" rx="12" fill="#5c5c5c"/>
+      <rect x="208" y="470" width="42" height="200" rx="12" fill="#5c5c5c"/>
+      <rect x="138" y="652" width="62" height="30" rx="10" fill="#0a0a0a"/>
+      <rect x="202" y="652" width="62" height="30" rx="10" fill="#0a0a0a"/>
+      <!-- left arm -->
+      <rect x="86" y="268" width="40" height="196" rx="20" fill="#0a0a0a" transform="rotate(8 106 280)"/>
+      <circle cx="94" cy="470" r="21" fill="#fff" stroke="#0a0a0a" stroke-width="6" transform="rotate(8 106 280)"/>
+      <!-- body -->
+      <rect x="118" y="248" width="164" height="250" rx="42" fill="#0a0a0a"/>
+      <line x1="200" y1="270" x2="200" y2="480" stroke="#fff" stroke-width="4" stroke-dasharray="2 26" stroke-linecap="round"/>
+      <!-- right arm (rotates to hold the phone) -->
+      <g id="armR">
+        <rect x="276" y="268" width="40" height="196" rx="20" fill="#0a0a0a"/>
+        <g id="handphone" opacity="0">
+          <rect x="248" y="392" width="70" height="120" rx="12" fill="#0a0a0a"/>
+          <rect x="256" y="404" width="54" height="90" rx="6" fill="#fff"/>
+          <circle cx="283" cy="449" r="13" fill="none" stroke="#0a0a0a" stroke-width="4" stroke-dasharray="20 6"/>
+        </g>
+        <circle cx="296" cy="468" r="21" fill="#fff" stroke="#0a0a0a" stroke-width="6"/>
+      </g>
+      <!-- neck + head -->
+      <rect x="184" y="222" width="32" height="36" fill="#fff" stroke="#0a0a0a" stroke-width="6"/>
+      <circle cx="200" cy="178" r="60" fill="#fff" stroke="#0a0a0a" stroke-width="6"/>
+      <circle cx="180" cy="176" r="7" fill="#0a0a0a"/>
+      <circle cx="222" cy="176" r="7" fill="#0a0a0a"/>
+      <path id="brows" d="M168 158 L190 158 M210 158 L232 158" stroke="#0a0a0a" stroke-width="6" stroke-linecap="round" fill="none"/>
+      <path id="mouth" d="M182 210 L220 210" stroke="#0a0a0a" stroke-width="6" stroke-linecap="round" fill="none"/>
+      <!-- conical farmer's hat -->
+      <path d="M50 142 L200 52 L350 142 Q200 166 50 142 Z" fill="#0a0a0a"/>
+      <path d="M110 136 L200 78 M290 136 L200 78 M200 78 L200 150" stroke="#fff" stroke-width="4" stroke-linecap="round" opacity=".55"/>
+    </svg>
+
+    <!-- Scene 1: seed packets and questions -->
+    <div id="packets"></div>
+    <svg id="cloud" class="abs t" style="left:1450px;top:150px;width:300px;height:170px" viewBox="0 0 300 170" aria-hidden="true">
+      <path d="M70 150 Q20 150 22 110 Q24 72 70 76 Q78 26 135 30 Q186 32 196 78 Q250 70 268 110 Q284 150 236 150 Z" fill="#fff" stroke="#0a0a0a" stroke-width="7" stroke-linejoin="round"/>
+      <g stroke="#0a0a0a" stroke-width="6" stroke-linecap="round"><line x1="90" y1="165" x2="80" y2="190"/><line x1="150" y1="165" x2="140" y2="190"/><line x1="210" y1="165" x2="200" y2="190"/></g>
+    </svg>
+    <svg id="sun" class="abs t" style="left:1500px;top:120px;width:220px;height:220px" viewBox="0 0 220 220" aria-hidden="true">
+      <g id="rays" stroke="#0a0a0a" stroke-width="9" stroke-linecap="round">
+        <line x1="110" y1="8" x2="110" y2="38"/><line x1="110" y1="182" x2="110" y2="212"/>
+        <line x1="8" y1="110" x2="38" y2="110"/><line x1="182" y1="110" x2="212" y2="110"/>
+        <line x1="38" y1="38" x2="58" y2="58"/><line x1="162" y1="162" x2="182" y2="182"/>
+        <line x1="38" y1="182" x2="58" y2="162"/><line x1="162" y1="58" x2="182" y2="38"/>
+      </g>
+      <circle cx="110" cy="110" r="50" fill="#fff" stroke="#0a0a0a" stroke-width="8"/>
+    </svg>
+
+    <!-- Scene 2: wasted money and time -->
+    <svg id="bag" class="abs t" style="left:1150px;top:640px;width:180px;height:200px" viewBox="0 0 180 200" aria-hidden="true">
+      <path d="M50 40 Q90 60 130 40 L120 70 Q178 110 160 170 Q150 196 90 196 Q30 196 20 170 Q2 110 60 70 Z" fill="#fff" stroke="#0a0a0a" stroke-width="7" stroke-linejoin="round"/>
+      <path d="M58 70 L122 70" stroke="#0a0a0a" stroke-width="7"/>
+      <text x="90" y="150" text-anchor="middle" font-family="Space Grotesk, sans-serif" font-weight="700" font-size="40" fill="#0a0a0a">NPK</text>
+    </svg>
+    <div id="coins"></div>
+    <div id="calendar" class="abs t"><div class="bar"></div><div class="month" id="cal-month">MAR</div></div>
+
+    <div id="cap1" class="abs caption t">Which crop will grow here?</div>
+    <div id="cap2" class="abs caption t">Wrong crop = wasted seed,<br>fertiliser and time.</div>
+  </div>
+
+  <!-- ================= SATELLITE + BEAM ================= -->
+  <svg id="beam" class="abs t" viewBox="0 0 1920 1080" aria-hidden="true">
+    <g id="beam-lines" stroke="#0a0a0a" stroke-width="5" stroke-linecap="round" fill="none">
+      <path d="M880 210 L1180 330"/><path d="M890 190 L1260 300"/><path d="M870 230 L1120 380"/>
+    </g>
+  </svg>
+  <div id="sat" class="abs t">
+    <svg viewBox="0 0 150 110" width="150" height="110" aria-hidden="true">
+      <rect x="0" y="35" width="48" height="40" fill="#fff" stroke="#0a0a0a" stroke-width="6"/>
+      <line x1="16" y1="35" x2="16" y2="75" stroke="#0a0a0a" stroke-width="4"/><line x1="32" y1="35" x2="32" y2="75" stroke="#0a0a0a" stroke-width="4"/>
+      <rect x="102" y="35" width="48" height="40" fill="#fff" stroke="#0a0a0a" stroke-width="6"/>
+      <line x1="118" y1="35" x2="118" y2="75" stroke="#0a0a0a" stroke-width="4"/><line x1="134" y1="35" x2="134" y2="75" stroke="#0a0a0a" stroke-width="4"/>
+      <line x1="48" y1="55" x2="102" y2="55" stroke="#0a0a0a" stroke-width="6"/>
+      <rect x="57" y="30" width="36" height="50" rx="6" fill="#0a0a0a"/>
+      <path d="M75 80 L75 96 M64 104 Q75 92 86 104" stroke="#0a0a0a" stroke-width="5" fill="none" stroke-linecap="round"/>
+    </svg>
+  </div>
+  <div id="sat-lab" class="abs t" style="left:700px;top:242px">NASA POWER</div>
+
+  <!-- ================= LEFT STORY TEXT ================= -->
+  <div id="l-meet" class="abs left t" style="top:330px">
+    <div class="eyebrow">Meet</div>
+    <div class="big">BUMI360</div>
+    <div class="sub">Crop planning for Sarawak farmers,<br>right on your phone.</div>
+  </div>
+
+  <div id="l-steps" class="abs left t" style="top:300px">
+    <div class="eyebrow">How it works</div>
+    <div class="step" id="st1"><div class="num">1</div><div class="lab">Soil pH</div></div>
+    <div class="step" id="st2"><div class="num">2</div><div class="lab">Location</div></div>
+    <div class="step" id="st3"><div class="num">3</div><div class="lab">Planting month</div></div>
+    <div id="nasa-badge" class="t">
+      <svg viewBox="0 0 150 110" width="78" height="57" aria-hidden="true">
+        <rect x="0" y="35" width="48" height="40" fill="#fff" stroke="#0a0a0a" stroke-width="7"/><rect x="102" y="35" width="48" height="40" fill="#fff" stroke="#0a0a0a" stroke-width="7"/>
+        <line x1="48" y1="55" x2="102" y2="55" stroke="#0a0a0a" stroke-width="7"/><rect x="57" y="30" width="36" height="50" rx="6" fill="#0a0a0a"/>
+      </svg>
+      <div><div class="k">NASA climate data</div><div class="s">25-year average for Sarawak</div></div>
+    </div>
+  </div>
+
+  <div id="l-results" class="abs left t" style="top:290px">
+    <div class="eyebrow">Results in seconds</div>
+    <div class="mid">Know what fits,<br>and what to fix.</div>
+    <div class="legend t" id="lg1"><span class="pill ok">✓ Suitable</span></div>
+    <div class="legend t" id="lg2"><span class="pill">! With management</span></div>
+    <div class="legend t" id="lg3"><span class="pill bad">✕ Less suitable</span></div>
+  </div>
+
+  <div id="l-guide" class="abs left t" style="top:330px">
+    <div class="eyebrow">Growing guide</div>
+    <div class="mid">Then grow it right.</div>
+    <div style="margin-top:40px">
+      <span class="chip t" id="ch1">Fertiliser</span><span class="chip t" id="ch2">Spacing</span><span class="chip t" id="ch3">Crop rotation</span>
+    </div>
+  </div>
+
+  <!-- ================= PHONE ================= -->
+  <div id="phone" class="abs t">
+    <div id="notch"></div>
+
+    <div id="scr-splash" class="screen t">
+      <div id="splash-inner">
+        <svg id="splash-mark" class="t" viewBox="0 0 32 32" aria-hidden="true">
+          <circle cx="16" cy="16" r="13" fill="none" stroke="#0a0a0a" stroke-width="2.6" stroke-dasharray="66 16" stroke-linecap="round" transform="rotate(-60 16 16)"/>
+          <path d="M16 23c0-5.5 2.6-9 7-10-.9 5.3-3.4 8.2-7 10zm0 0c0-3.6-1.8-6.2-5.3-7 0 3.6 1.9 6.2 5.3 7z" fill="#0a0a0a"/>
+        </svg>
+        <div id="splash-word" class="wm t"><b>BUMI</b><span>360</span></div>
+      </div>
+    </div>
+
+    <div id="scr-form" class="screen t">
+      <div class="appbar"><svg viewBox="0 0 32 32" width="34" height="34" aria-hidden="true"><circle cx="16" cy="16" r="13" fill="none" stroke="#0a0a0a" stroke-width="2.8" stroke-dasharray="66 16" stroke-linecap="round" transform="rotate(-60 16 16)"/><path d="M16 23c0-5.5 2.6-9 7-10-.9 5.3-3.4 8.2-7 10zm0 0c0-3.6-1.8-6.2-5.3-7 0 3.6 1.9 6.2 5.3 7z" fill="#0a0a0a"/></svg><span class="wm"><b>BUMI</b><span>360</span></span><span class="ham"></span></div>
+      <div style="font:700 30px var(--display);margin-bottom:18px">Your field</div>
+      <div class="f-label">Soil pH</div>
+      <div class="f-box" id="fb-ph"><span id="ph-val"></span><span class="caret" id="caret"></span><span class="unit">pH</span></div>
+      <div class="f-label">Location in Sarawak</div>
+      <div class="f-box" id="fb-loc"><span id="loc-val">Kuching</span><span class="chev"></span></div>
+      <div id="map">
+        <div class="coast"></div>
+        <svg id="pin" viewBox="0 0 44 60" aria-hidden="true"><path d="M22 58 C10 40 2 30 2 20 A20 20 0 0 1 42 20 C42 30 34 40 22 58 Z" fill="#0a0a0a"/><circle cx="22" cy="20" r="8" fill="#fff"/></svg>
+        <div class="pinlab t" id="pinlab">Miri</div>
+      </div>
+      <div class="f-label">Planting month</div>
+      <div class="f-box" id="fb-month"><span id="month-val">January</span><span class="chev"></span></div>
+      <div class="btn t" id="btn">Check suitability</div>
+    </div>
+
+    <div id="scr-results" class="screen t">
+      <div class="appbar"><svg viewBox="0 0 32 32" width="34" height="34" aria-hidden="true"><circle cx="16" cy="16" r="13" fill="none" stroke="#0a0a0a" stroke-width="2.8" stroke-dasharray="66 16" stroke-linecap="round" transform="rotate(-60 16 16)"/><path d="M16 23c0-5.5 2.6-9 7-10-.9 5.3-3.4 8.2-7 10zm0 0c0-3.6-1.8-6.2-5.3-7 0 3.6 1.9 6.2 5.3 7z" fill="#0a0a0a"/></svg><span class="wm"><b>BUMI</b><span>360</span></span><span class="ham"></span></div>
+      <div class="r-meta">pH 5.8 · Miri · planting in March</div>
+      <div class="r-head">2 of 5 crops suit your field as it is</div>
+
+      <div class="card t" id="c1">
+        <div class="row"><div><div class="name">Water Spinach</div><div class="local">Kangkung</div></div><span class="pill ok">✓ Suitable</span></div>
+      </div>
+      <div class="card t" id="c2" style="border:3px solid #0a0a0a">
+        <div class="row"><div><div class="name">Maize</div><div class="local">Jagung</div></div><span class="pill">! With management</span></div>
+        <div class="nasa"><b>NASA POWER</b> · Miri · Mar–May: 27.7°C, 366 mm rain</div>
+        <div class="meter"><span class="band"></span><span class="mark" id="mz-mark"></span></div>
+        <div class="meter-lab"><span>Yours: <b id="mz-val" style="color:#0a0a0a">0</b> mm</span><span>Needs 500–800 mm</span></div>
+        <div class="msg t" id="mz-msg"><b>Not enough.</b> 134 mm short of the minimum. Plan extra irrigation.</div>
+      </div>
+      <div class="card t" id="c3">
+        <div class="row"><div><div class="name">Soybean</div><div class="local">Soya</div></div><span class="pill bad">✕ Less suitable</span></div>
+        <div class="msg"><b>Too acidic.</b> Raise soil pH with lime or dolomite.</div>
+      </div>
+    </div>
+
+    <div id="scr-guide" class="screen t">
+      <div class="appbar"><svg viewBox="0 0 32 32" width="34" height="34" aria-hidden="true"><circle cx="16" cy="16" r="13" fill="none" stroke="#0a0a0a" stroke-width="2.8" stroke-dasharray="66 16" stroke-linecap="round" transform="rotate(-60 16 16)"/><path d="M16 23c0-5.5 2.6-9 7-10-.9 5.3-3.4 8.2-7 10zm0 0c0-3.6-1.8-6.2-5.3-7 0 3.6 1.9 6.2 5.3 7z" fill="#0a0a0a"/></svg><span class="wm"><b>BUMI</b><span>360</span></span><span class="ham"></span></div>
+      <div class="viewport"><div id="guide-scroll" class="t">
+        <div class="g-title">Peanut</div>
+        <div class="g-sub"><i>Arachis hypogaea</i> · Kacang Tanah</div>
+        <div class="g-stats">
+          <div class="g-stat"><div class="k">SOIL PH</div><div class="v">5.5–7.0</div></div>
+          <div class="g-stat"><div class="k">TEMPERATURE</div><div class="v">28–30°C</div></div>
+        </div>
+        <div class="g-h">FERTILISER (KG/HA)</div>
+        <div class="g-row"><span>NPK, no soil test</span><b>25 : 50 : 75</b></div>
+        <div class="g-row"><span>Gypsum at flowering</span><b>200–400</b></div>
+        <div class="g-h" style="margin-top:18px">SPACING</div>
+        <div class="g-row"><span>Erect type</span><b>30–40 × 10–15 cm</b></div>
+        <div id="rot" class="t">
+          <div class="flow">Peanut → Maize <span class="gain">+25% yield</span></div>
+          <p>Plant legumes first. They add nitrogen to the soil.</p>
+        </div>
+      </div></div>
+    </div>
+  </div>
+
+  <!-- ================= END CARD ================= -->
+  <div id="end" class="abs t">
+    <div class="logo t" id="e-logo">
+      <svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="13" fill="none" stroke="#0a0a0a" stroke-width="2.6" stroke-dasharray="66 16" stroke-linecap="round" transform="rotate(-60 16 16)"/><path d="M16 23c0-5.5 2.6-9 7-10-.9 5.3-3.4 8.2-7 10zm0 0c0-3.6-1.8-6.2-5.3-7 0 3.6 1.9 6.2 5.3 7z" fill="#0a0a0a"/></svg>
+      <div class="word wm"><b>BUMI</b><span>360</span></div>
+    </div>
+    <div class="tag t" id="e-tag">Know what your land can grow.</div>
+    <div class="facts t" id="e-facts">Free · No sign-up · Works on any phone</div>
+    <div class="url t" id="e-url">project-editing-using-claude-and-gi.vercel.app</div>
+  </div>
+  <div id="credit" class="abs t">Climate data: NASA POWER</div>
+</div>
+
+<script>
+"use strict";
+const $ = (id) => document.getElementById(id);
+const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
+const p = (t, a, b) => clamp((t - a) / (b - a));
+const eo = (x) => 1 - Math.pow(1 - x, 3);
+const eio = (x) => (x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2);
+const back = (x) => { const c1 = 1.70158, c3 = c1 + 1; return 1 + c3 * Math.pow(x - 1, 3) + c1 * Math.pow(x - 1, 2); };
+const lerp = (a, b, x) => a + (b - a) * x;
+// visible from a..b (fade in), until c..d (fade out)
+const win = (t, a, b, c, d) => Math.min(eo(p(t, a, b)), 1 - p(t, c, d));
+function set(el, o, x = 0, y = 0, s = 1, r = 0) {
+  el.style.opacity = o.toFixed(3);
+  el.style.transform = `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px) scale(${s.toFixed(4)}) rotate(${r.toFixed(2)}deg)`;
+}
+
+/* ---------- build repeated pieces ---------- */
+const PLANT_X = [760, 880, 1000, 1120, 1240, 1360, 1480, 1600, 1720];
+PLANT_X.forEach((x, i) => {
+  const d = document.createElement("div");
+  d.className = "abs plant t";
+  d.style.left = x + "px";
+  d.style.top = "585px";
+  d.innerHTML = `<svg viewBox="0 0 120 300" width="120" height="300" aria-hidden="true">
+    <path d="M60 300 L60 90" stroke="currentColor" stroke-width="9" stroke-linecap="round"/>
+    <path d="M60 210 Q18 196 10 150 Q50 156 60 196 Z" fill="currentColor"/>
+    <path d="M60 170 Q102 156 110 110 Q70 116 60 156 Z" fill="currentColor"/>
+    <path d="M60 120 Q30 100 34 62 Q60 76 60 106 Z" fill="currentColor"/>
+    <ellipse cx="60" cy="74" rx="13" ry="26" fill="currentColor"/></svg>`;
+  $("plants").appendChild(d);
+});
+const plants = [...document.querySelectorAll(".plant")];
+
+const SEEDS = ["MAIZE", "SOYBEAN", "PEANUT"];
+SEEDS.forEach((name, i) => {
+  const pk = document.createElement("div");
+  pk.className = "abs packet t";
+  pk.style.left = 720 + i * 230 + "px";
+  pk.style.top = "400px";
+  pk.innerHTML = `<div class="top">SEEDS</div><div class="mid"><svg viewBox="0 0 80 60" width="90" height="68" aria-hidden="true">
+    <ellipse cx="22" cy="30" rx="12" ry="18" fill="#0a0a0a" transform="rotate(-25 22 30)"/>
+    <ellipse cx="44" cy="22" rx="12" ry="18" fill="#0a0a0a" transform="rotate(15 44 22)"/>
+    <ellipse cx="62" cy="38" rx="11" ry="16" fill="#0a0a0a" transform="rotate(-10 62 38)"/></svg></div><div class="lab">${name}</div>`;
+  $("packets").appendChild(pk);
+  const q = document.createElement("div");
+  q.className = "abs qm t";
+  q.style.left = 720 + i * 230 + "px";
+  q.style.top = "270px";
+  q.textContent = "?";
+  $("packets").appendChild(q);
+});
+const packets = [...document.querySelectorAll(".packet")];
+const qms = [...document.querySelectorAll(".qm")];
+
+for (let i = 0; i < 6; i++) {
+  const c = document.createElement("div");
+  c.className = "abs coin t";
+  c.textContent = "RM";
+  c.style.left = "1203px";
+  c.style.top = "650px";
+  $("coins").appendChild(c);
+}
+const coins = [...document.querySelectorAll(".coin")];
+const MONTHS = ["MAR", "APR", "MAY", "JUN", "JUL", "AUG"];
+
+const MOUTH = {
+  neutral: "M182 210 L220 210",
+  worried: "M182 216 Q201 200 220 216",
+  smile: "M176 202 Q201 232 226 202",
+};
+const BROWS = {
+  neutral: "M168 158 L190 158 M210 158 L232 158",
+  worried: "M168 152 L190 160 M210 160 L232 152",
+  happy: "M168 156 Q179 148 190 156 M210 156 Q221 148 232 156",
+};
+
+/* ---------- the timeline ----------
+   The animation was first drawn on a 30 s timeline (t). The voice-over runs about 43 s (T),
+   so each scene is stretched to its voice-over: [old seconds, new seconds]. */
+const MAP = [[0, 0], [5.0, 5.8], [9.4, 11.7], [12.0, 13.9], [18.0, 23.0], [23.9, 30.1], [26.8, 36.8], [30, 43]];
+function remap(T) {
+  for (let i = 1; i < MAP.length; i++) {
+    const [o0, n0] = MAP[i - 1], [o1, n1] = MAP[i];
+    if (T <= n1) return o0 + ((o1 - o0) * (T - n0)) / (n1 - n0);
+  }
+  return 30;
+}
+const REC_FROM = 13.8, REC_TO = 38.2; // phone screen shows the real screen recording
+
+window.renderAt = function (T) {
+  const t = remap(T);
+  /* World: on 0–11, back for the ending 26.9–30 */
+  const worldIn = t < 20 ? 1 - p(T, 11.9, 12.45) : eo(p(T, 37.0, 37.7));
+  const worldX = t < 20 ? -380 * eio(p(T, 11.9, 12.5)) : lerp(-160, -60, eo(p(T, 37.0, 37.9)));
+  set($("world"), worldIn, worldX, 0);
+
+  // Farmer face
+  let mood = "neutral";
+  if (t >= 4.9 && t < 9.4) mood = "worried";
+  if (t >= 26) mood = "smile";
+  $("mouth").setAttribute("d", MOUTH[mood]);
+  $("brows").setAttribute("d", mood === "worried" ? BROWS.worried : mood === "smile" ? BROWS.happy : BROWS.neutral);
+  // Farmer raises the phone 9.0–9.6
+  const arm = t < 20 ? 34 * eo(p(t, 9.0, 9.6)) : 0;
+  $("armR").setAttribute("transform", `rotate(${arm.toFixed(2)} 296 286)`);
+  $("handphone").setAttribute("opacity", t < 20 ? p(t, 9.1, 9.4).toFixed(3) : "0");
+  // Gentle idle sway
+  set($("farmer"), 1, 0, Math.sin(t * 2.2) * 3);
+
+  // Plants: grow and wilt in scene 2; grow healthy at the end
+  plants.forEach((pl, i) => {
+    let h, droop, shade;
+    if (t >= 26.9) {
+      h = 1.08 * back(p(t, 27.3 + i * 0.07, 28.1 + i * 0.07));
+      droop = 0; shade = 0;
+    } else {
+      h = eo(p(t, 5.0 + i * 0.06, 6.0 + i * 0.06));
+      droop = eio(p(t, 6.6 + i * 0.03, 7.6 + i * 0.03));
+      shade = droop;
+    }
+    const g = Math.round(lerp(10, 165, shade));
+    pl.style.color = `rgb(${g},${g},${g})`;
+    pl.style.opacity = h > 0.01 ? "1" : "0";
+    pl.style.transform = `rotate(${(droop * (i % 2 ? 38 : -34)).toFixed(2)}deg) scale(${Math.max(h, 0.001).toFixed(3)}, ${Math.max(h * (1 - droop * 0.35), 0.001).toFixed(3)})`;
+  });
+
+  // Scene 1: packets + question marks + weather
+  packets.forEach((pk, i) => {
+    const s = back(p(t, 0.5 + i * 0.3, 1.0 + i * 0.3));
+    const out = p(t, 4.5, 5.0);
+    set(pk, Math.min(p(t, 0.5 + i * 0.3, 0.7 + i * 0.3), 1 - out), 0, Math.sin(t * 2 + i) * 8 + out * 40, Math.max(s, 0.001) * (1 - out * 0.2));
+  });
+  qms.forEach((q, i) => {
+    const s = back(p(t, 1.6 + i * 0.25, 2.0 + i * 0.25));
+    set(q, Math.min(p(t, 1.6 + i * 0.25, 1.75 + i * 0.25), 1 - p(t, 4.5, 4.9)), 0, Math.sin(t * 3 + i * 1.7) * 10, Math.max(s, 0.001), Math.sin(t * 2.5 + i) * 6);
+  });
+  set($("cloud"), win(t, 2.3, 2.9, 3.7, 4.1), lerp(260, 0, eo(p(t, 2.3, 3.1))), Math.sin(t * 1.5) * 6);
+  set($("sun"), win(t, 3.8, 4.3, 4.9, 5.3), 0, lerp(40, 0, eo(p(t, 3.8, 4.4))), 1);
+  $("rays").setAttribute("transform", `rotate(${(t * 40).toFixed(1)} 110 110)`);
+  set($("cap1"), win(t, 0.4, 1.0, 4.5, 4.9), 0, lerp(30, 0, eo(p(t, 0.4, 1.0))));
+
+  // Scene 2: money and months slipping away
+  set($("bag"), win(t, 5.8, 6.3, 8.9, 9.3), 0, lerp(40, 0, eo(p(t, 5.8, 6.3))));
+  coins.forEach((c, i) => {
+    const k = p(t, 6.4 + i * 0.22, 7.6 + i * 0.22);
+    const dx = (i % 2 ? 1 : -1) * (80 + i * 34) * k;
+    const dy = -260 * Math.sin(Math.PI * k * 0.8) - 40 * k;
+    set(c, k > 0 ? Math.min(1, k * 6) * (1 - p(t, 7.3 + i * 0.22, 7.6 + i * 0.22)) * (1 - p(t, 8.9, 9.3)) : 0, dx, dy, 1, k * 360);
+  });
+  const calOn = win(t, 5.9, 6.4, 8.9, 9.3);
+  set($("calendar"), calOn, 0, lerp(-30, 0, eo(p(t, 5.9, 6.4))));
+  const ck = p(t, 6.3, 8.7) * (MONTHS.length - 1);
+  const mi = Math.min(MONTHS.length - 1, Math.floor(ck));
+  $("cal-month").textContent = MONTHS[mi];
+  const frac = ck - Math.floor(ck);
+  $("cal-month").style.transform = `scaleY(${(frac < 0.25 && mi > 0 ? 0.4 + frac * 2.4 : 1).toFixed(3)})`;
+  set($("cap2"), win(t, 5.2, 5.8, 8.9, 9.3), 0, lerp(30, 0, eo(p(t, 5.2, 5.8))));
+
+  /* Phone: rises 9.8–10.9, slides out 26.8–27.4 */
+  const rise = eio(p(t, 9.8, 10.9));
+  const leave = eio(p(T, 36.5, 37.2));
+  const phoneX = lerp(-420, 0, rise) + leave * 900, phoneY = lerp(760, 0, rise), phoneS = lerp(0.45, 1, rise);
+  set($("phone"), p(t, 9.8, 10.1), phoneX, phoneY, phoneS);
+  const rec = T >= REC_FROM && T < REC_TO;
+  set($("hole"), 1, phoneX, phoneY, phoneS);
+  $("hole").style.background = rec ? "transparent" : "#fff";
+  $("phone").style.background = rec ? "transparent" : "#fff";
+
+  // Phone screens
+  set($("scr-splash"), 1 - p(t, 11.9, 12.3), 0, 0);
+  set($("splash-mark"), p(t, 10.3, 10.6), 0, 0, Math.max(back(p(t, 10.3, 11.1)), 0.001), lerp(-200, 0, eo(p(t, 10.3, 11.2))));
+  set($("splash-word"), p(t, 10.9, 11.3), 0, lerp(20, 0, eo(p(t, 10.9, 11.4))));
+
+  const toResults = eio(p(t, 17.8, 18.3));
+  const toGuide = eio(p(t, 23.7, 24.2));
+  set($("scr-form"), p(t, 11.9, 12.3) * (1 - toResults), -460 * toResults, lerp(30, 0, eo(p(t, 11.9, 12.4))));
+  set($("scr-results"), toResults * (1 - toGuide), 460 * (1 - toResults) - 460 * toGuide, 0);
+  set($("scr-guide"), toGuide, 460 * (1 - toGuide), 0);
+
+  // Form: type pH, choose Miri, choose March, press the button
+  const typed = "5.8".slice(0, t < 12.7 ? 0 : t < 13.0 ? 1 : t < 13.3 ? 2 : 3);
+  $("ph-val").textContent = typed;
+  $("caret").style.opacity = t >= 12.3 && t < 13.9 && Math.floor(t * 3) % 2 === 0 ? "1" : "0";
+  $("fb-ph").classList.toggle("active", t >= 12.3 && t < 13.9);
+  $("fb-loc").classList.toggle("active", t >= 13.9 && t < 15.1);
+  $("fb-month").classList.toggle("active", t >= 15.1 && t < 16.0);
+  $("loc-val").textContent = t >= 14.4 ? "Miri" : "Kuching";
+  $("month-val").textContent = t >= 15.5 ? "March" : "January";
+  const drop = eo(p(t, 14.4, 15.0));
+  set($("pin"), p(t, 14.4, 14.6), 0, lerp(-80, 0, drop) - (t > 15 ? Math.abs(Math.sin((t - 15) * 4)) * 6 * (1 - p(t, 15, 16)) : 0));
+  set($("pinlab"), p(t, 14.9, 15.2), 0, 0);
+  const press = p(t, 17.3, 17.45) - p(t, 17.45, 17.65);
+  set($("btn"), 1, 0, 0, 1 - 0.06 * press);
+
+  // Satellite beams NASA data 15.9–17.9
+  const satK = eo(p(t, 15.9, 16.8));
+  const satOn = win(t, 15.9, 16.3, 17.8, 18.3);
+  set($("sat"), satOn, lerp(-200, 0, satK), lerp(-60, 0, satK) + Math.sin(t * 3) * 6, 1, lerp(-25, -8, satK));
+  set($("sat-lab"), win(t, 16.4, 16.8, 17.8, 18.3), 0, 0);
+  set($("beam"), win(t, 16.5, 16.8, 17.7, 18.1) * (0.6 + 0.4 * Math.abs(Math.sin(t * 6))), 0, 0);
+  [...$("beam-lines").children].forEach((l, i) => {
+    l.setAttribute("stroke-dasharray", "18 18");
+    l.setAttribute("stroke-dashoffset", (-(t * 120) - i * 12).toFixed(1));
+  });
+
+  // Results: cards arrive, maize meter fills
+  [$("c1"), $("c2"), $("c3")].forEach((c, i) => {
+    const k = eo(p(t, 18.3 + i * 0.45, 18.9 + i * 0.45));
+    set(c, k, 0, lerp(80, 0, k));
+  });
+  const mz = eio(p(t, 19.9, 20.9));
+  $("mz-mark").style.left = (lerp(0, 30.5, mz)).toFixed(2) + "%";
+  $("mz-val").textContent = String(Math.round(lerp(0, 366, mz)));
+  set($("mz-msg"), p(t, 20.8, 21.2), 0, lerp(10, 0, eo(p(t, 20.8, 21.3))));
+
+  // Guide: scroll down to rotation
+  set($("guide-scroll"), 1, 0, -150 * eio(p(t, 25.0, 26.2)));
+  const rotPop = p(t, 25.6, 25.9) - p(t, 25.9, 26.3);
+  set($("rot"), 1, 0, 0, 1 + 0.05 * rotPop);
+
+  /* Left story text */
+  set($("l-meet"), win(t, 10.6, 11.1, 11.8, 12.1), lerp(-30, 0, eo(p(t, 10.6, 11.2))), 0);
+  set($("l-steps"), win(t, 12.1, 12.5, 17.7, 18.0), lerp(-30, 0, eo(p(t, 12.1, 12.6))), 0);
+  const active = [[12.3, 13.9], [13.9, 15.1], [15.1, 16.0]];
+  ["st1", "st2", "st3"].forEach((id, i) => {
+    const [a, b] = active[i];
+    const el = $(id);
+    const on = t >= a && t < b;
+    el.classList.toggle("done", t >= b);
+    el.style.opacity = on || t >= b ? "1" : "0.3";
+    el.style.transform = `translateX(${on ? 16 : 0}px)`;
+  });
+  set($("nasa-badge"), p(t, 16.2, 16.6), 0, lerp(20, 0, eo(p(t, 16.2, 16.7))));
+
+  set($("l-results"), win(t, 18.2, 18.7, 23.6, 23.9), lerp(-30, 0, eo(p(t, 18.2, 18.8))), 0);
+  ["lg1", "lg2", "lg3"].forEach((id, i) => set($(id), p(t, 19.0 + i * 0.4, 19.3 + i * 0.4), lerp(-20, 0, eo(p(t, 19.0 + i * 0.4, 19.4 + i * 0.4))), 0));
+
+  set($("l-guide"), win(t, 24.0, 24.5, 26.6, 26.9), lerp(-30, 0, eo(p(t, 24.0, 24.6))), 0);
+  ["ch1", "ch2", "ch3"].forEach((id, i) => set($(id), p(t, 24.6 + i * 0.3, 24.9 + i * 0.3), 0, 0, Math.max(back(p(t, 24.6 + i * 0.3, 25.0 + i * 0.3)), 0.001)));
+
+  /* End card */
+  set($("end"), p(t, 27.3, 27.5), 0, 0);
+  set($("e-logo"), p(t, 27.4, 27.8), lerp(40, 0, eo(p(t, 27.4, 28.0))), 0);
+  set($("e-tag"), p(t, 27.8, 28.2), lerp(40, 0, eo(p(t, 27.8, 28.3))), 0);
+  set($("e-facts"), p(t, 28.2, 28.6), lerp(40, 0, eo(p(t, 28.2, 28.7))), 0);
+  set($("e-url"), p(t, 28.5, 28.9), lerp(40, 0, eo(p(t, 28.5, 29.0))), 0);
+  set($("credit"), p(t, 28.2, 28.6), 0, 0);
+
+  /* ---------- Synced to the voice-over (new timeline T) ---------- */
+  // Real screen recording replaces the drawn screens in scenes 4–6
+  if (rec) ["scr-form", "scr-results", "scr-guide"].forEach((id) => ($(id).style.opacity = "0"));
+
+  // Scene 3 "Meet BUMI360" (12.0)
+  set($("l-meet"), win(T, 12.45, 12.85, 13.7, 14.0), lerp(-30, 0, eo(p(T, 12.45, 13.0))), 0);
+
+  // Scene 4 (14.05): "soil pH" 14.1 · "location" 16.1 · "planting month" 17.5 · "uses NASA climate data" 19.0
+  set($("l-steps"), win(T, 14.0, 14.4, 22.8, 23.1), lerp(-30, 0, eo(p(T, 14.0, 14.5))), 0);
+  [[14.05, 16.0], [16.0, 17.45], [17.45, 19.0]].forEach(([a, b], i) => {
+    const el = $("st" + (i + 1));
+    const on = T >= a && T < b;
+    el.classList.toggle("done", T >= b);
+    el.style.opacity = on || T >= b ? "1" : "0.3";
+    el.style.transform = `translateX(${on ? 16 : 0}px)`;
+  });
+  set($("nasa-badge"), p(T, 20.4, 20.8), 0, lerp(20, 0, eo(p(T, 20.4, 20.9))));
+  const satIn = eo(p(T, 19.0, 19.9));
+  set($("sat"), win(T, 19.0, 19.4, 22.7, 23.1), lerp(-200, 0, satIn), lerp(-60, 0, satIn) + Math.sin(T * 3) * 6, 1, lerp(-25, -8, satIn));
+  set($("sat-lab"), win(T, 19.6, 20.0, 22.7, 23.1), 0, 0);
+  set($("beam"), win(T, 19.8, 20.1, 22.6, 23.0) * (0.6 + 0.4 * Math.abs(Math.sin(T * 6))), 0, 0);
+
+  // Scene 5 (23.2): "see which crops suit your field" 25.0 · "what to fix" 28.2
+  set($("l-results"), win(T, 23.2, 23.7, 29.9, 30.2), lerp(-30, 0, eo(p(T, 23.2, 23.8))), 0);
+  ["lg1", "lg2", "lg3"].forEach((id, i) => set($(id), p(T, 25.0 + i * 0.5, 25.3 + i * 0.5), lerp(-20, 0, eo(p(T, 25.0 + i * 0.5, 25.4 + i * 0.5))), 0));
+
+  // Scene 6 (30.25): "growing guide" 32.2 · "fertiliser" 34.25 · "crop rotation" 35.5
+  set($("l-guide"), win(T, 30.25, 30.7, 36.6, 36.9), lerp(-30, 0, eo(p(T, 30.25, 30.8))), 0);
+  [34.1, 34.7, 35.4].forEach((a, i) => set($("ch" + (i + 1)), p(T, a, a + 0.3), 0, 0, Math.max(back(p(T, a, a + 0.4)), 0.001)));
+
+  // Scene 7 (37.0): "BUMI360" 37.0 · "know what your land can grow" 38.6
+  set($("end"), p(T, 37.05, 37.2), 0, 0);
+  set($("e-logo"), p(T, 37.15, 37.5), lerp(40, 0, eo(p(T, 37.15, 37.7))), 0);
+  set($("e-tag"), p(T, 38.5, 38.9), lerp(40, 0, eo(p(T, 38.5, 39.0))), 0);
+  set($("e-facts"), p(T, 39.4, 39.8), lerp(40, 0, eo(p(T, 39.4, 39.9))), 0);
+  set($("e-url"), p(T, 39.8, 40.2), lerp(40, 0, eo(p(T, 39.8, 40.3))), 0);
+  set($("credit"), p(T, 39.4, 39.8), 0, 0);
+};
+
+window.renderAt(0);
+</script>
+</body>
+</html>
