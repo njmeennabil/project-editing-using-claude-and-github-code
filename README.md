@@ -1,4 +1,4 @@
-# project-editing-using-claude-and-github-code
+# BUMI360
 
+- [`docs/`](docs/): website BUMI360 (English) untuk petani
 - [`database/`](database/): database tanaman (SQLite + Excel)
-- [`docs/`](docs/): website *Semak Kesesuaian Tanaman* untuk petani

@@ -1,43 +1,42 @@
-# Website: Semak Kesesuaian Tanaman
+# BUMI360 (website)
 
-Petani isi **pH tanah**, **suhu purata (°C)** dan **air tersedia semusim (mm)**. Website kemudian
-tunjuk sama ada setiap tanaman sesuai, dan panduan penanamannya (baja, jarak, amalan, giliran).
+Website bahasa Inggeris untuk petani. Petani isi **soil pH**, **average temperature (°C)** dan
+**water available per season (mm)**. Website tunjuk kesesuaian setiap tanaman, dan sediakan panduan
+penanaman, jadual perbandingan serta giliran tanaman. Reka bentuknya responsif untuk telefon, tablet dan laptop.
 
-## Cara ia berfungsi
-
-```
-database/tanaman.db  ──(python3 database/export_json.py)──►  docs/data/tanaman.js
-                                                                  │
-docs/index.html  ◄── baca data ───────────────────────────────────┘
-      │
-      └── semua pengiraan dibuat dalam pelayar (JavaScript). Tiada server diperlukan.
-```
+## Struktur
 
 | Fail | Kegunaan |
 |---|---|
-| `index.html` | Halaman website: borang, logik semakan, paparan keputusan |
-| `data/tanaman.js` | Data tanaman untuk website (dijana, jangan ubah dengan tangan) |
-| `data/tanaman.json` | Data yang sama dalam JSON, untuk aplikasi lain atau API |
+| `index.html` | Struktur halaman: header, hero, Field check, Crop guide, Compare, Rotation, About |
+| `assets/style.css` | Reka bentuk dan susun atur responsif (telefon < 768px, tablet 768–1023px, laptop ≥ 1024px) |
+| `assets/app.js` | Logik semakan kesesuaian dan paparan data |
+| `data/crops.js` | Data tanaman dalam bahasa Inggeris (dijana, jangan ubah dengan tangan) |
+| `data/crops.json` | Data yang sama dalam JSON, untuk aplikasi lain atau API |
+
+## Aliran data
+
+```
+database/seed.sql (Bahasa Melayu)
+   → python3 database/build_db.py      → database/tanaman.db
+   → python3 database/export_json.py   → docs/data/crops.js + crops.json (English)
+                                          (guna database/translations_en.py)
+```
+
+Database dan Excel kekal dalam bahasa Melayu. Teks bahasa Inggeris datang dari
+`database/translations_en.py`. Kalau awak tambah tanaman atau teks baru dalam `seed.sql`,
+`export_json.py` akan berhenti dan senaraikan teks yang belum ada terjemahan. Tambah terjemahan itu
+dalam `translations_en.py`, kemudian jalankan semula.
 
 ## Logik semakan
 
-| Faktor | Sesuai | Perlu pengurusan | Kurang sesuai |
+| Faktor | Suitable | Suitable with management | Less suitable |
 |---|---|---|---|
 | pH | Dalam julat | – | Luar julat (atau bawah pH bahaya, cth. soya < 4.5) |
 | Suhu | Dalam julat optimum | Luar julat ≤ 2°C | Luar julat > 2°C |
-| Air | Dalam julat | Kurang ≤ 50% atau berlebihan | Kurang > 50% daripada minimum |
+| Air | Dalam julat | Kurang ≤ 50%, atau berlebihan | Kurang > 50% daripada minimum |
 
-Keputusan keseluruhan ikut faktor yang paling teruk. Tanaman tanpa angka air (mm), iaitu kangkung dan sawi,
-tunjuk nota kelembapan sahaja dan tidak menjejaskan keputusan.
-
-## Kemas kini data
-
-Selepas ubah `database/seed.sql`:
-
-```bash
-python3 database/build_db.py
-python3 database/export_json.py
-```
+Keputusan keseluruhan ikut faktor yang paling teruk.
 
 ## Hoskan percuma di GitHub Pages
 
@@ -46,8 +45,8 @@ python3 database/export_json.py
 3. Source: **Deploy from a branch**, Branch: **main**, Folder: **/docs**, kemudian Save.
 4. Selepas 1–2 minit, website ada di `https://<nama-pengguna>.github.io/<nama-repo>/`.
 
-Folder ini dinamakan `docs` kerana GitHub Pages hanya boleh hoskan dari root repo atau folder `/docs`.
-GitHub Pages untuk repo peribadi (private) memerlukan pelan GitHub berbayar; repo awam (public) percuma.
+Untuk guna domain sendiri (cth. `bumi360.my`), isi **Custom domain** di halaman yang sama dan
+tetapkan DNS di pembekal domain mengikut arahan GitHub.
 
 ## Cuba di komputer sendiri
 

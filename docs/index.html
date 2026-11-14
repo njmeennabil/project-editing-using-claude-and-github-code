@@ -1,452 +1,198 @@
 <!doctype html>
-<html lang="ms">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Semak Kesesuaian Tanaman</title>
+<title>BUMI360</title>
 <meta name="claude:viewport-fit-sides" content="cover">
-<meta name="description" content="Masukkan pH tanah, suhu purata dan air tersedia semusim untuk melihat tanaman yang sesuai serta panduan penanamannya.">
+<meta name="description" content="BUMI360 helps Malaysian farmers check which crops suit their soil pH, temperature and seasonal water, with fertiliser and planting guides for each crop.">
+<meta name="theme-color" content="#1f5a3a">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='15' fill='%231f5a3a'/%3E%3Cpath d='M16 24c0-6 3-10 8-11-1 6-4 9-8 11zm0 0c0-4-2-7-6-8 0 4 2 7 6 8z' fill='%23e9f3ec'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap">
-<style>
-/* Layout: borang di kiri (melekat semasa skrol), kad keputusan bertimbun di kanan; satu lajur di telefon. */
-:root {
-  --bg: #f1f4ee;
-  --surface: #ffffff;
-  --fg: #17241b;
-  --muted: #56675b;
-  --line: #d4ddd0;
-  --accent: #2b6b45;
-  --accent-fg: #ffffff;
-  --band: #c7e0cd;
-  --track: #e5ebe1;
-  --ok: #217a46;
-  --warn: #9a610c;
-  --bad: #b3261e;
-  --info: #49606f;
-  --font-display: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
-  --font-body: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-}
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --bg: #111914; --surface: #18221b; --fg: #e2eae3; --muted: #98a99c; --line: #2b3a30;
-    --accent: #6cbf8b; --accent-fg: #0c1510; --band: #2b4d37; --track: #24312a;
-    --ok: #63c48b; --warn: #e3ac4f; --bad: #f2776c; --info: #9db3c2;
-    color-scheme: dark;
-  }
-}
-:root[data-theme="dark"] {
-  --bg: #111914; --surface: #18221b; --fg: #e2eae3; --muted: #98a99c; --line: #2b3a30;
-  --accent: #6cbf8b; --accent-fg: #0c1510; --band: #2b4d37; --track: #24312a;
-  --ok: #63c48b; --warn: #e3ac4f; --bad: #f2776c; --info: #9db3c2;
-  color-scheme: dark;
-}
-
-* { box-sizing: border-box; }
-body {
-  margin: 0;
-  background: var(--bg);
-  color: var(--fg);
-  font: 15px/1.55 var(--font-body);
-  padding-left: max(16px, env(safe-area-inset-left, 0px));
-  padding-right: max(16px, env(safe-area-inset-right, 0px));
-  padding-block: 28px 40px;
-}
-.wrap { max-width: 1120px; margin: 0 auto; display: grid; gap: 28px; }
-
-h1, h2, h3 { font-family: var(--font-display); text-wrap: balance; margin: 0; letter-spacing: -0.01em; }
-h1 { font-size: clamp(1.7rem, 4vw, 2.3rem); line-height: 1.1; }
-.lead { margin: 8px 0 0; color: var(--muted); max-width: 62ch; }
-.eyebrow { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.09em; color: var(--accent); font-weight: 600; margin: 0 0 6px; }
-
-.layout { display: grid; grid-template-columns: minmax(0, 320px) minmax(0, 1fr); gap: 28px; align-items: start; }
-@media (max-width: 820px) { .layout { grid-template-columns: minmax(0, 1fr); } }
-
-/* Borang */
-.panel {
-  background: var(--surface); border: 1px solid var(--line); border-radius: 14px;
-  padding: 20px; display: grid; gap: 16px; position: sticky; top: 16px;
-}
-@media (max-width: 820px) { .panel { position: static; } }
-.panel h2 { font-size: 1.1rem; }
-.field { display: grid; gap: 6px; }
-.field label { font-weight: 600; font-size: 0.9rem; }
-.field .hint { font-size: 0.78rem; color: var(--muted); }
-.input-unit { display: flex; align-items: stretch; border: 1px solid var(--line); border-radius: 9px; background: var(--bg); overflow: hidden; }
-.input-unit:focus-within { outline: 2px solid var(--accent); outline-offset: 1px; }
-.input-unit input, select {
-  flex: 1; min-width: 0; border: 0; background: transparent; color: var(--fg);
-  font: 600 1.05rem var(--font-body); padding: 10px 12px; font-variant-numeric: tabular-nums;
-}
-.input-unit input:focus { outline: none; }
-.input-unit .unit { display: grid; place-items: center; padding: 0 12px; color: var(--muted); font-size: 0.85rem; border-left: 1px solid var(--line); }
-select { border: 1px solid var(--line); border-radius: 9px; background: var(--bg); font-weight: 500; font-size: 0.95rem; width: 100%; }
-select:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
-.btn {
-  appearance: none; border: 0; border-radius: 9px; background: var(--accent); color: var(--accent-fg);
-  font: 600 0.95rem var(--font-body); padding: 11px 14px; cursor: pointer;
-}
-.btn:hover { filter: brightness(1.06); }
-.btn:focus-visible { outline: 2px solid var(--fg); outline-offset: 2px; }
-.sample-note { font-size: 0.78rem; color: var(--muted); margin: 0; }
-
-/* Ringkasan */
-.results { display: grid; gap: 16px; min-width: 0; }
-.summary { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: baseline; }
-.summary h2 { font-size: 1.15rem; flex-basis: 100%; }
-.summary .conds { color: var(--muted); font-size: 0.9rem; flex-basis: 100%; font-variant-numeric: tabular-nums; }
-.chips { display: flex; flex-wrap: wrap; gap: 8px; }
-
-.pill {
-  display: inline-flex; align-items: center; gap: 6px; white-space: nowrap;
-  font-size: 0.8rem; font-weight: 600; padding: 4px 10px; border-radius: 999px;
-  color: var(--c); background: color-mix(in srgb, var(--c) 13%, transparent);
-  border: 1px solid color-mix(in srgb, var(--c) 30%, transparent);
-}
-.pill::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--c); }
-.s-ok { --c: var(--ok); } .s-warn { --c: var(--warn); } .s-bad { --c: var(--bad); }
-.s-info, .s-none { --c: var(--info); }
-
-/* Kad tanaman */
-.cards { display: grid; gap: 14px; }
-.card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
-.card-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; padding: 16px 18px 4px; flex-wrap: wrap; }
-.card-head h3 { font-size: 1.25rem; }
-.sci { margin: 2px 0 0; color: var(--muted); font-size: 0.85rem; }
-.sci i { font-style: italic; }
-
-.checks { list-style: none; margin: 0; padding: 8px 18px 14px; display: grid; gap: 12px; }
-.check { display: grid; grid-template-columns: 112px minmax(0, 1fr); gap: 4px 14px; align-items: center; }
-@media (max-width: 480px) { .check { grid-template-columns: minmax(0, 1fr); } }
-.check-name { font-weight: 600; font-size: 0.88rem; display: flex; align-items: center; gap: 7px; }
-.check-name::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--c); flex: none; }
-.check-body { display: grid; gap: 5px; min-width: 0; }
-.check-line { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; font-size: 0.82rem; color: var(--muted); font-variant-numeric: tabular-nums; }
-.check-msg { margin: 0; font-size: 0.88rem; color: var(--fg); }
-.check-msg strong { color: var(--c); font-weight: 600; }
-
-.bar { position: relative; height: 10px; border-radius: 5px; background: var(--track); }
-.bar .band { position: absolute; top: 0; bottom: 0; background: var(--band); border-radius: 5px; }
-.bar .mark {
-  position: absolute; top: -4px; width: 4px; height: 18px; margin-left: -2px; border-radius: 2px;
-  background: var(--c); box-shadow: 0 0 0 2px var(--surface);
-}
-
-/* Panduan */
-details { border-top: 1px solid var(--line); }
-summary {
-  cursor: pointer; padding: 12px 18px; font-weight: 600; font-size: 0.9rem; color: var(--accent);
-  list-style: none; display: flex; align-items: center; gap: 8px;
-}
-summary::-webkit-details-marker { display: none; }
-summary::before { content: "▸"; transition: transform 0.15s; }
-details[open] summary::before { transform: rotate(90deg); }
-summary:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
-.guide { padding: 0 18px 18px; display: grid; gap: 16px; }
-.guide h4 { margin: 0 0 6px; font: 600 0.72rem var(--font-body); text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
-.facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px 18px; margin: 0; }
-.facts div { min-width: 0; }
-.facts dt { font-size: 0.78rem; color: var(--muted); }
-.facts dd { margin: 0; font-size: 0.9rem; }
-.guide ul { margin: 0; padding-left: 18px; display: grid; gap: 4px; font-size: 0.9rem; }
-.table-scroll { overflow-x: auto; }
-table { border-collapse: collapse; width: 100%; font-size: 0.85rem; font-variant-numeric: tabular-nums; }
-th, td { text-align: left; padding: 6px 10px 6px 0; border-bottom: 1px solid var(--line); vertical-align: top; }
-th { font-weight: 600; color: var(--muted); font-size: 0.78rem; white-space: nowrap; }
-td.num { white-space: nowrap; }
-.tag { font-size: 0.72rem; font-weight: 600; color: var(--muted); border: 1px solid var(--line); border-radius: 5px; padding: 0 6px; margin-right: 6px; text-transform: capitalize; }
-
-footer { color: var(--muted); font-size: 0.8rem; border-top: 1px solid var(--line); padding-top: 16px; display: grid; gap: 4px; }
-footer p { margin: 0; max-width: 80ch; }
-
-@media (prefers-reduced-motion: reduce) { summary::before { transition: none; } }
-</style>
+<link rel="stylesheet" href="assets/style.css">
 </head>
 <body>
-<div class="wrap">
-  <header>
-    <p class="eyebrow">Panduan ladang</p>
-    <h1>Semak Kesesuaian Tanaman</h1>
-    <p class="lead">Masukkan keadaan ladang anda. Setiap tanaman akan dibandingkan dengan julat pH, suhu optimum dan keperluan air semusim, berserta panduan baja dan amalan penanaman.</p>
-  </header>
+<a class="skip" href="#check">Skip to the field check</a>
 
-  <div class="layout">
-    <form class="panel" id="borang" novalidate>
-      <h2>Keadaan ladang</h2>
-      <div class="field">
-        <label for="ph">pH tanah</label>
-        <div class="input-unit"><input id="ph" name="ph" type="number" inputmode="decimal" step="0.1" min="0" max="14" value="5.8"><span class="unit">pH</span></div>
-        <span class="hint">Daripada ujian tanah, skala 0–14</span>
-      </div>
-      <div class="field">
-        <label for="suhu">Suhu purata</label>
-        <div class="input-unit"><input id="suhu" name="suhu" type="number" inputmode="decimal" step="0.5" value="28"><span class="unit">°C</span></div>
-      </div>
-      <div class="field">
-        <label for="air">Air tersedia semusim</label>
-        <div class="input-unit"><input id="air" name="air" type="number" inputmode="numeric" step="10" min="0" value="600"><span class="unit">mm</span></div>
-        <span class="hint">Hujan dan pengairan sepanjang musim</span>
-      </div>
-      <div class="field">
-        <label for="pilihan">Tanaman</label>
-        <select id="pilihan" name="pilihan"><option value="semua">Semua tanaman (bandingkan)</option></select>
-      </div>
-      <button class="btn" type="submit">Semak</button>
-      <p class="sample-note" id="nota-contoh">Nilai di atas ialah contoh. Tukar kepada data ladang anda.</p>
-    </form>
-
-    <section class="results" aria-live="polite">
-      <div class="summary" id="ringkasan"></div>
-      <div class="cards" id="kad"></div>
-    </section>
+<header class="site-header" id="top">
+  <div class="bar-inner">
+    <a class="brand" href="#top" aria-label="BUMI360 home">
+      <svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true">
+        <circle cx="16" cy="16" r="13" fill="none" stroke="currentColor" stroke-width="2.6" stroke-dasharray="66 16" stroke-linecap="round" transform="rotate(-60 16 16)"/>
+        <path d="M16 23c0-5.5 2.6-9 7-10-.9 5.3-3.4 8.2-7 10zm0 0c0-3.6-1.8-6.2-5.3-7 0 3.6 1.9 6.2 5.3 7z" fill="currentColor"/>
+      </svg>
+      <span>BUMI<b>360</b></span>
+    </a>
+    <button class="menu-btn" id="menu-btn" type="button" aria-expanded="false" aria-controls="site-nav">
+      <span class="sr">Menu</span><span class="menu-icon" aria-hidden="true"></span>
+    </button>
+    <nav class="site-nav" id="site-nav" aria-label="Main">
+      <a href="#check">Field check</a>
+      <a href="#crops">Crop guide</a>
+      <a href="#compare">Compare</a>
+      <a href="#rotation">Rotation</a>
+      <a href="#about">About</a>
+    </nav>
   </div>
+</header>
 
-  <footer>
-    <p>Data daripada database tanaman projek ini. Rujukan baja termasuk TNAU, Nepal dan Jabatan Pertanian Sarawak seperti dinyatakan pada setiap tanaman.</p>
-    <p>Ini panduan umum. Untuk keputusan penanaman, sahkan dengan ujian tanah dan pegawai pertanian kawasan anda.</p>
-  </footer>
-</div>
+<main>
+  <section class="hero">
+    <div class="container hero-inner">
+      <div class="hero-copy">
+        <p class="eyebrow">Crop planning for Malaysian farms</p>
+        <h1>Know what your land can grow before you plant.</h1>
+        <p class="lead">Enter your soil pH, average temperature and the water your field gets in a season. BUMI360 checks each crop against its needs and shows you the fertiliser, spacing and care it requires.</p>
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="#check">Check my field</a>
+          <a class="btn btn-ghost" href="#crops">Browse crops</a>
+        </div>
+      </div>
+      <ul class="hero-facts" aria-label="At a glance">
+        <li><span class="fact-num" id="fact-crops">5</span><span class="fact-label">crops with full guides</span></li>
+        <li><span class="fact-num">3</span><span class="fact-label">field readings: pH, °C, mm</span></li>
+        <li><span class="fact-num">0</span><span class="fact-label">sign-ups needed</span></li>
+      </ul>
+    </div>
+  </section>
 
-<script src="data/tanaman.js"></script>
-<script>
-(function () {
-  "use strict";
-  var D = window.DATA_TANAMAN;
-  var TANAMAN = D.tanaman;
+  <!-- FIELD CHECK -->
+  <section class="section" id="check" aria-labelledby="check-title">
+    <div class="container">
+      <div class="section-head">
+        <p class="eyebrow">Field check</p>
+        <h2 id="check-title">How suitable is your field?</h2>
+      </div>
 
-  var $ = function (id) { return document.getElementById(id); };
-  var esc = function (s) {
-    return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
-      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
-    });
-  };
-  var num = function (n) { return n == null ? "–" : String(Math.round(n * 100) / 100); };
-  var julat = function (a, b) {
-    if (a == null && b == null) return "–";
-    if (a == null) return "≤ " + num(b);
-    if (b == null) return "≥ " + num(a);
-    return a === b ? num(a) : num(a) + "–" + num(b);
-  };
+      <div class="check-layout">
+        <form class="panel form" id="field-form" novalidate>
+          <h3>Your field</h3>
+          <div class="fields">
+            <div class="field">
+              <label for="ph">Soil pH</label>
+              <div class="input-unit"><input id="ph" name="ph" type="number" inputmode="decimal" step="0.1" min="0" max="14" value="5.8"><span class="unit">pH</span></div>
+              <span class="hint">From a soil test, scale 0–14</span>
+            </div>
+            <div class="field">
+              <label for="temp">Average temperature</label>
+              <div class="input-unit"><input id="temp" name="temp" type="number" inputmode="decimal" step="0.5" value="28"><span class="unit">°C</span></div>
+              <span class="hint">Typical day and night average</span>
+            </div>
+            <div class="field">
+              <label for="water">Water available per season</label>
+              <div class="input-unit"><input id="water" name="water" type="number" inputmode="numeric" step="10" min="0" value="600"><span class="unit">mm</span></div>
+              <span class="hint">Rainfall plus irrigation</span>
+            </div>
+            <div class="field">
+              <label for="crop-choice">Crop</label>
+              <select id="crop-choice" name="crop-choice"><option value="all">All crops (compare)</option></select>
+              <span class="hint">Pick one crop or compare all</span>
+            </div>
+          </div>
+          <div class="form-foot">
+            <button class="btn btn-primary" type="submit">Check suitability</button>
+            <button class="btn btn-ghost" type="button" id="reset-btn">Reset to example</button>
+          </div>
+          <p class="sample-note" id="sample-note">These are example values. Replace them with your own field readings.</p>
+        </form>
 
-  var LABEL = { ok: "Sesuai", warn: "Sesuai dengan pengurusan", bad: "Kurang sesuai", none: "Lengkapkan borang" };
-  var RANK = { ok: 0, warn: 1, bad: 2, none: 3 };
+        <div class="results" aria-live="polite">
+          <div class="summary" id="summary"></div>
+          <div class="result-list" id="results"></div>
+        </div>
+      </div>
+    </div>
+  </section>
 
-  /* ---------- Logik semakan ---------- */
-  function semakPH(t, ph) {
-    var k = t.tanah;
-    var r = { nama: "pH tanah", julat: "Julat " + k.ph_min.toFixed(1) + "–" + k.ph_max.toFixed(1),
-              bar: { d: [3.5, 8.5], lo: k.ph_min, hi: k.ph_max, v: ph }, nilai: isNaN(ph) ? null : "Anda: " + ph.toFixed(1) };
-    if (isNaN(ph)) { r.status = "none"; r.msg = "Belum diisi."; return r; }
-    if (k.ph_elak_bawah != null && ph < k.ph_elak_bawah) {
-      r.status = "bad"; r.tajuk = "Bahaya";
-      r.msg = "Di bawah pH " + num(k.ph_elak_bawah) + ", risiko keracunan aluminium. Naikkan pH sebelum menanam.";
-    } else if (ph < k.ph_min) {
-      r.status = "bad"; r.tajuk = "Terlalu rendah";
-      r.msg = "Kurang " + (k.ph_min - ph).toFixed(1) + " daripada minimum. Naikkan pH tanah, contohnya dengan kapur pertanian atau dolomit.";
-    } else if (ph > k.ph_max) {
-      r.status = "bad"; r.tajuk = "Terlalu tinggi";
-      r.msg = "Lebih " + (ph - k.ph_max).toFixed(1) + " daripada maksimum.";
-    } else {
-      r.status = "ok"; r.tajuk = "Sesuai"; r.msg = "Dalam julat yang disyorkan.";
-    }
-    return r;
-  }
+  <!-- CROP GUIDE -->
+  <section class="section section-alt" id="crops" aria-labelledby="crops-title">
+    <div class="container">
+      <div class="section-head">
+        <p class="eyebrow">Crop guide</p>
+        <h2 id="crops-title">Growing guides</h2>
+        <p class="section-lead">Soil, water, fertiliser and spacing for every crop in the BUMI360 database.</p>
+      </div>
+      <div class="crop-tabs" id="crop-tabs" role="tablist" aria-label="Choose a crop"></div>
+      <article class="panel guide-panel" id="guide-panel" role="tabpanel" tabindex="-1"></article>
+    </div>
+  </section>
 
-  function semakSuhu(t, s) {
-    var r = { nama: "Suhu", julat: "Optimum " + julat(t.suhu_min_c, t.suhu_max_c) + "°C",
-              bar: { d: [10, 40], lo: t.suhu_min_c, hi: t.suhu_max_c, v: s }, nilai: isNaN(s) ? null : "Anda: " + num(s) + "°C" };
-    if (isNaN(s)) { r.status = "none"; r.msg = "Belum diisi."; return r; }
-    var beza = s < t.suhu_min_c ? t.suhu_min_c - s : s > t.suhu_max_c ? s - t.suhu_max_c : 0;
-    if (beza === 0) { r.status = "ok"; r.tajuk = "Optimum"; r.msg = "Dalam julat suhu optimum."; return r; }
-    r.status = beza <= 2 ? "warn" : "bad";
-    r.tajuk = s < t.suhu_min_c ? "Terlalu sejuk" : "Terlalu panas";
-    r.msg = num(beza) + "°C " + (s < t.suhu_min_c ? "di bawah" : "di atas") + " julat optimum. Pertumbuhan dan hasil mungkin terjejas.";
-    return r;
-  }
+  <!-- COMPARE -->
+  <section class="section" id="compare" aria-labelledby="compare-title">
+    <div class="container">
+      <div class="section-head">
+        <p class="eyebrow">Compare</p>
+        <h2 id="compare-title">Crops side by side</h2>
+      </div>
+      <div class="table-scroll panel">
+        <table class="compare-table" id="compare-table"></table>
+      </div>
+    </div>
+  </section>
 
-  function semakAir(t, a) {
-    if (t.air_min_mm == null) {
-      return { nama: "Air semusim", julat: "Tiada angka mm", bar: null, nilai: null, status: "info",
-               tajuk: "Kekalkan kelembapan", msg: t.air_nota || "" };
-    }
-    var r = { nama: "Air semusim", julat: "Perlu " + julat(t.air_min_mm, t.air_max_mm) + " mm",
-              bar: { d: [0, 1200], lo: t.air_min_mm, hi: t.air_max_mm, v: a }, nilai: isNaN(a) ? null : "Anda: " + num(a) + " mm" };
-    if (isNaN(a)) { r.status = "none"; r.msg = "Belum diisi."; return r; }
-    if (a < t.air_min_mm) {
-      var kurang = t.air_min_mm - a;
-      r.status = kurang > t.air_min_mm * 0.5 ? "bad" : "warn"; r.tajuk = "Tidak cukup";
-      r.msg = "Kurang " + num(kurang) + " mm daripada keperluan minimum. Perlu pengairan tambahan.";
-    } else if (a > t.air_max_mm) {
-      r.status = "warn"; r.tajuk = "Berlebihan";
-      r.msg = "Melebihi keperluan sebanyak " + num(a - t.air_max_mm) + " mm. Pastikan saliran baik." + (t.air_nota ? " " + t.air_nota : "");
-    } else {
-      r.status = "ok"; r.tajuk = "Mencukupi";
-      r.msg = "Air mencukupi untuk semusim." + (t.air_sasaran_mm ? " Sasaran untuk hasil tinggi sekitar " + num(t.air_sasaran_mm) + " mm." : "");
-    }
-    return r;
-  }
+  <!-- ROTATION -->
+  <section class="section section-alt" id="rotation" aria-labelledby="rotation-title">
+    <div class="container">
+      <div class="section-head">
+        <p class="eyebrow">Crop rotation</p>
+        <h2 id="rotation-title">Plant legumes first</h2>
+        <p class="section-lead">Soybean and peanut fix nitrogen from the air. The crop that follows them starts with richer soil.</p>
+      </div>
+      <div class="rotation-grid" id="rotation-list"></div>
+      <ul class="note-list" id="rotation-notes"></ul>
+    </div>
+  </section>
 
-  function nilai(t, input) {
-    var checks = [semakPH(t, input.ph), semakSuhu(t, input.suhu), semakAir(t, input.air)];
-    var st = checks.map(function (c) { return c.status; });
-    var overall = st.indexOf("none") >= 0 ? "none" : st.indexOf("bad") >= 0 ? "bad" : st.indexOf("warn") >= 0 ? "warn" : "ok";
-    return { t: t, checks: checks, status: overall };
-  }
+  <!-- ABOUT -->
+  <section class="section" id="about" aria-labelledby="about-title">
+    <div class="container about-grid">
+      <div>
+        <p class="eyebrow">About</p>
+        <h2 id="about-title">How BUMI360 decides</h2>
+        <p class="section-lead">Each reading is compared with the crop's recommended range. The overall result follows the weakest reading.</p>
+        <div class="table-scroll">
+          <table class="rules-table">
+            <thead><tr><th>Reading</th><th><span class="pill s-ok">Suitable</span></th><th><span class="pill s-warn">With management</span></th><th><span class="pill s-bad">Less suitable</span></th></tr></thead>
+            <tbody>
+              <tr><th>Soil pH</th><td>Within range</td><td>–</td><td>Outside range</td></tr>
+              <tr><th>Temperature</th><td>Within optimum</td><td>Up to 2°C outside</td><td>More than 2°C outside</td></tr>
+              <tr><th>Water</th><td>Within range</td><td>Short by up to half, or excess</td><td>Short by more than half</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="small">Water Spinach and Mustard Greens have no seasonal water figure in mm. For these crops, BUMI360 shows moisture advice and the water reading does not change the result.</p>
+      </div>
+      <div class="about-side">
+        <div class="panel">
+          <h3>Data sources</h3>
+          <p>Crop requirements and fertiliser rates come from the BUMI360 crop database, with references including TNAU, Nepal guidelines and the Department of Agriculture Sarawak, as noted on each crop.</p>
+        </div>
+        <div class="panel">
+          <h3>Coming next</h3>
+          <p>Satellite rainfall (NASA GPM) and soil moisture (NASA SMAP) for Sabah and Sarawak, so your field readings can be filled in from your location.</p>
+        </div>
+        <div class="panel panel-note">
+          <h3>Please note</h3>
+          <p>BUMI360 gives general guidance. Confirm planting decisions with a soil test and your local agriculture officer.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
 
-  /* ---------- Paparan ---------- */
-  function barHtml(b, status) {
-    if (!b) return "";
-    var pct = function (x) { return Math.max(0, Math.min(100, (x - b.d[0]) / (b.d[1] - b.d[0]) * 100)); };
-    var lo = pct(b.lo), hi = pct(b.hi);
-    var mark = isNaN(b.v) ? "" : '<span class="mark" style="left:' + pct(b.v).toFixed(1) + '%"></span>';
-    return '<div class="bar" aria-hidden="true"><span class="band" style="left:' + lo.toFixed(1) + '%;width:' + Math.max(hi - lo, 1).toFixed(1) + '%"></span>' + mark + "</div>";
-  }
+<footer class="site-footer">
+  <div class="container footer-inner">
+    <a class="brand brand-small" href="#top"><span>BUMI<b>360</b></span></a>
+    <nav aria-label="Footer">
+      <a href="#check">Field check</a><a href="#crops">Crop guide</a><a href="#compare">Compare</a><a href="#rotation">Rotation</a><a href="#about">About</a>
+    </nav>
+    <p>© <span id="year">2026</span> BUMI360. General guidance only.</p>
+  </div>
+</footer>
 
-  function checkHtml(c) {
-    return '<li class="check s-' + c.status + '">' +
-      '<span class="check-name">' + esc(c.nama) + "</span>" +
-      '<div class="check-body">' +
-        '<div class="check-line"><span>' + esc(c.julat) + "</span>" + (c.nilai ? "<span>" + esc(c.nilai) + "</span>" : "") + "</div>" +
-        barHtml(c.bar, c.status) +
-        '<p class="check-msg">' + (c.tajuk ? "<strong>" + esc(c.tajuk) + ".</strong> " : "") + esc(c.msg) + "</p>" +
-      "</div></li>";
-  }
-
-  function guideHtml(t) {
-    var k = t.tanah, parts = [];
-    var matang = t.matang_min_hari == null ? "Tiada data"
-      : (t.matang_min_hari === t.matang_max_hari ? "Sekitar " + t.matang_min_hari : julat(t.matang_min_hari, t.matang_max_hari)) + " hari" +
-        (t.matang_nota ? " (" + t.matang_nota + ")" : "");
-    var facts = [
-      ["Tanah", k.tekstur], ["Saliran", k.saliran], ["Tempoh matang", matang],
-      ["Nutrien utama", t.nutrien_utama], ["Keperluan nitrogen", t.keperluan_n],
-      ["Peringkat kritikal air", t.air_kritikal.length ? t.air_kritikal.join(", ") : "Tiada data"]
-    ];
-    if (k.nota) facts.push(["Nota tanah", k.nota]);
-    if (t.sumber_rujukan) facts.push(["Sumber rujukan", t.sumber_rujukan]);
-    parts.push("<div><h4>Ringkasan</h4><dl class=\"facts\">" + facts.map(function (f) {
-      return "<div><dt>" + esc(f[0]) + "</dt><dd>" + esc(f[1]) + "</dd></div>";
-    }).join("") + "</dl></div>");
-
-    if (t.baja_npk.length) {
-      parts.push('<div><h4>Dos baja NPK (kg/ha)</h4><div class="table-scroll"><table><thead><tr><th>Sumber</th><th>Keadaan</th><th>N</th><th>P₂O₅</th><th>K₂O</th></tr></thead><tbody>' +
-        t.baja_npk.map(function (b) {
-          return "<tr><td>" + esc(b.sumber) + "</td><td>" + esc(b.keadaan) + (b.nota ? '<br><span style="color:var(--muted)">' + esc(b.nota) + "</span>" : "") + "</td>" +
-            '<td class="num">' + julat(b.n_min, b.n_max) + '</td><td class="num">' + julat(b.p2o5_min, b.p2o5_max) + '</td><td class="num">' + julat(b.k2o_min, b.k2o_max) + "</td></tr>";
-        }).join("") + "</tbody></table></div></div>");
-    }
-    if (t.program_baja.length) {
-      parts.push('<div><h4>Program baja</h4><div class="table-scroll"><table><thead><tr><th>Baja</th><th>Kadar</th><th>Bila</th></tr></thead><tbody>' +
-        t.program_baja.map(function (p) {
-          return "<tr><td>" + esc(p.jenis_baja) + (p.nota ? '<br><span style="color:var(--muted)">' + esc(p.nota) + "</span>" : "") + "</td>" +
-            '<td class="num">' + julat(p.kadar_min, p.kadar_max) + " " + esc(p.unit) + "</td><td>" + esc(p.masa_aplikasi) + "</td></tr>";
-        }).join("") + "</tbody></table></div></div>");
-    }
-    if (t.nutrien_khusus.length) {
-      parts.push("<div><h4>Nutrien khusus</h4><ul>" + t.nutrien_khusus.map(function (n) {
-        var kadar = n.kadar_min_kg_ha != null ? ": " + julat(n.kadar_min_kg_ha, n.kadar_max_kg_ha) + " kg/ha" : "";
-        return "<li><strong>" + esc(n.nutrien) + "</strong>: " + esc(n.kepentingan) +
-          (n.sumber_baja ? ". " + esc(n.sumber_baja) + kadar : "") + (n.masa_aplikasi ? ", " + esc(n.masa_aplikasi) : "") + "</li>";
-      }).join("") + "</ul></div>");
-    }
-    if (t.jarak.length) {
-      parts.push("<div><h4>Jarak tanaman</h4><ul>" + t.jarak.map(function (j) {
-        var a = julat(j.antara_baris_min_cm, j.antara_baris_max_cm), d = julat(j.dalam_baris_min_cm, j.dalam_baris_max_cm);
-        var teks = a !== "–" && d !== "–" ? a + " × " + d + " cm (antara baris × dalam baris)"
-          : a !== "–" ? a + " cm antara baris" : d + " cm antara pokok";
-        return "<li>" + (j.jenis_varieti ? "<strong>" + esc(j.jenis_varieti) + "</strong>: " : "") + esc(teks) + "</li>";
-      }).join("") + "</ul></div>");
-    }
-    if (t.amalan.length) {
-      parts.push("<div><h4>Amalan</h4><ul>" + t.amalan.map(function (a) {
-        return '<li><span class="tag">' + esc(a.kategori) + "</span>" + esc(a.perkara) + "</li>";
-      }).join("") + "</ul></div>");
-    }
-    var gil = D.giliran.filter(function (g) { return g.sebelum === t.nama_bm || g.selepas === t.nama_bm; });
-    if (gil.length) {
-      parts.push("<div><h4>Giliran tanaman</h4><ul>" + gil.map(function (g) {
-        return "<li>" + esc(g.sebelum) + " → " + esc(g.selepas) +
-          (g.kesan_hasil_peratus ? " (hasil +" + num(g.kesan_hasil_peratus) + "%)" : "") + ". " + esc(g.nota) + "</li>";
-      }).join("") + "</ul></div>");
-    }
-    return '<div class="guide">' + parts.join("") + "</div>";
-  }
-
-  function cardHtml(r, buka) {
-    var t = r.t;
-    return '<article class="card">' +
-      '<header class="card-head"><div><h3>' + esc(t.nama_bm) + '</h3><p class="sci"><i>' + esc(t.nama_saintifik) + "</i> · " + esc(t.jenis) + "</p></div>" +
-      '<span class="pill s-' + r.status + '">' + LABEL[r.status] + "</span></header>" +
-      '<ul class="checks">' + r.checks.map(checkHtml).join("") + "</ul>" +
-      "<details" + (buka ? " open" : "") + "><summary>Panduan penanaman " + esc(t.nama_bm) + "</summary>" + guideHtml(t) + "</details>" +
-      "</article>";
-  }
-
-  function baca() {
-    var f = function (id) { var v = $(id).value.trim(); return v === "" ? NaN : parseFloat(v.replace(",", ".")); };
-    return { ph: f("ph"), suhu: f("suhu"), air: f("air"), pilihan: $("pilihan").value };
-  }
-
-  function render() {
-    var input = baca();
-    var senarai = input.pilihan === "semua" ? TANAMAN : TANAMAN.filter(function (t) { return t.kod === input.pilihan; });
-    var hasil = senarai.map(function (t) { return nilai(t, input); });
-    if (input.pilihan === "semua") {
-      hasil.sort(function (a, b) { return RANK[a.status] - RANK[b.status] || a.t.id - b.t.id; });
-    }
-
-    var conds = [
-      isNaN(input.ph) ? "pH belum diisi" : "pH " + input.ph.toFixed(1),
-      isNaN(input.suhu) ? "suhu belum diisi" : num(input.suhu) + "°C",
-      isNaN(input.air) ? "air belum diisi" : num(input.air) + " mm semusim"
-    ].join(" · ");
-
-    var html;
-    if (input.pilihan === "semua") {
-      var kira = { ok: 0, warn: 0, bad: 0, none: 0 };
-      hasil.forEach(function (r) { kira[r.status]++; });
-      html = "<h2>" + (kira.none ? "Lengkapkan borang untuk keputusan penuh"
-        : kira.ok + " daripada " + hasil.length + " tanaman sesuai terus") + "</h2>" +
-        '<p class="conds">' + esc(conds) + "</p><div class=\"chips\">" +
-        ["ok", "warn", "bad"].filter(function (s) { return kira[s]; }).map(function (s) {
-          return '<span class="pill s-' + s + '">' + kira[s] + " " + LABEL[s].toLowerCase() + "</span>";
-        }).join("") + "</div>";
-    } else {
-      var r0 = hasil[0];
-      html = "<h2>" + esc(r0.t.nama_bm) + ": " + LABEL[r0.status].toLowerCase() + "</h2>" + '<p class="conds">' + esc(conds) + "</p>";
-    }
-    $("ringkasan").innerHTML = html;
-    $("kad").innerHTML = hasil.map(function (r) { return cardHtml(r, input.pilihan !== "semua"); }).join("");
-    simpan(input);
-  }
-
-  /* Ingat nilai terakhir dalam pelayar ini sahaja */
-  var KUNCI = "semak-tanaman-v1";
-  function simpan(input) {
-    try { localStorage.setItem(KUNCI, JSON.stringify({ ph: $("ph").value, suhu: $("suhu").value, air: $("air").value, pilihan: input.pilihan })); } catch (e) {}
-  }
-  function pulih() {
-    try {
-      var s = JSON.parse(localStorage.getItem(KUNCI) || "null");
-      if (!s) return;
-      ["ph", "suhu", "air"].forEach(function (id) { if (s[id] != null) $(id).value = s[id]; });
-      if (s.pilihan && $("pilihan").querySelector('option[value="' + s.pilihan + '"]')) $("pilihan").value = s.pilihan;
-      $("nota-contoh").textContent = "Nilai terakhir anda dipulihkan.";
-    } catch (e) {}
-  }
-
-  TANAMAN.forEach(function (t) {
-    var o = document.createElement("option");
-    o.value = t.kod; o.textContent = t.nama_bm;
-    $("pilihan").appendChild(o);
-  });
-  pulih();
-  $("borang").addEventListener("submit", function (e) { e.preventDefault(); render(); });
-  $("borang").addEventListener("input", render);
-  $("borang").addEventListener("change", render);
-  render();
-})();
-</script>
+<script src="data/crops.js"></script>
+<script src="assets/app.js"></script>
 </body>
 </html>

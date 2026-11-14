@@ -11,6 +11,8 @@ Database SQLite untuk keperluan agronomi jagung, soya, kacang tanah, kangkung da
 | `build_db.py` | Bina semula `tanaman.db` daripada dua fail di atas |
 | `tanaman.db` | Database SQLite yang sudah siap |
 | `export_excel.py` | Eksport database ke `tanaman.xlsx` |
+| `export_json.py` | Eksport data (bahasa Inggeris) untuk website BUMI360 ke `docs/data/` |
+| `translations_en.py` | Terjemahan bahasa Inggeris untuk teks dalam database |
 | `tanaman.xlsx` | Versi Excel: satu helaian bagi setiap jadual + helaian *Semak Kesesuaian* |
 
 Untuk bina semula selepas mengubah `seed.sql`:
@@ -18,6 +20,7 @@ Untuk bina semula selepas mengubah `seed.sql`:
 ```bash
 python3 build_db.py
 python3 export_excel.py
+python3 export_json.py
 ```
 
 ## Jadual
