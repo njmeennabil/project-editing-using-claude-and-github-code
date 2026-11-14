@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>BUMI360</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="BUMI360 helps Malaysian farmers check which crops suit their soil pH, temperature and seasonal water, with fertiliser and planting guides for each crop.">
+<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='15' fill='%23000000'/%3E%3Cpath d='M16 24c0-6 3-10 8-11-1 6-4 9-8 11zm0 0c0-4-2-7-6-8 0 4 2 7 6 8z' fill='%23ffffff'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<a class="skip" href="#check">Skip to the field check</a>
+
+<header class="site-header" id="top">
+  <div class="bar-inner">
+    <a class="brand" href="#top" aria-label="BUMI360 home">
+      <svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true">
+        <circle cx="16" cy="16" r="13" fill="none" stroke="currentColor" stroke-width="2.6" stroke-dasharray="66 16" stroke-linecap="round" transform="rotate(-60 16 16)"/>
+        <path d="M16 23c0-5.5 2.6-9 7-10-.9 5.3-3.4 8.2-7 10zm0 0c0-3.6-1.8-6.2-5.3-7 0 3.6 1.9 6.2 5.3 7z" fill="currentColor"/>
+      </svg>
+      <span>BUMI<b>360</b></span>
+    </a>
+    <button class="menu-btn" id="menu-btn" type="button" aria-expanded="false" aria-controls="site-nav">
+      <span class="sr">Menu</span><span class="menu-icon" aria-hidden="true"></span>
+    </button>
+    <nav class="site-nav" id="site-nav" aria-label="Main">
+      <a href="#check">Field check</a>
+      <a href="#crops">Crop guide</a>
+      <a href="#compare">Compare</a>
+      <a href="#rotation">Rotation</a>
+      <a href="#about">About</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <section class="hero">
+    <div class="container hero-inner">
+      <div class="hero-copy">
+        <p class="eyebrow">Crop planning for Malaysian farms</p>
+        <h1>Know what your land can grow before you plant.</h1>
+        <p class="lead">Enter your soil pH, average temperature and the water your field gets in a season. BUMI360 checks each crop against its needs and shows you the fertiliser, spacing and care it requires.</p>
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="#check">Check my field</a>
+          <a class="btn btn-ghost" href="#crops">Browse crops</a>
+        </div>
+      </div>
+      <ul class="hero-facts" aria-label="At a glance">
+        <li><span class="fact-num" id="fact-crops">5</span><span class="fact-label">crops with full guides</span></li>
+        <li><span class="fact-num">3</span><span class="fact-label">field readings: pH, °C, mm</span></li>
+        <li><span class="fact-num">0</span><span class="fact-label">sign-ups needed</span></li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- FIELD CHECK -->
+  <section class="section" id="check" aria-labelledby="check-title">
+    <div class="container">
+      <div class="section-head">
+        <p class="eyebrow">Field check</p>
+        <h2 id="check-title">How suitable is your field?</h2>
+      </div>
+
+      <div class="check-layout">
+        <form class="panel form" id="field-form" novalidate>
+          <h3>Your field</h3>
+          <div class="fields">
+            <div class="field">
+              <label for="ph">Soil pH</label>
+              <div class="input-unit"><input id="ph" name="ph" type="number" inputmode="decimal" step="0.1" min="0" max="14" value="5.8"><span class="unit">pH</span></div>
+              <span class="hint">From a soil test, scale 0–14</span>
+            </div>
+            <div class="field">
+              <label for="temp">Average temperature</label>
+              <div class="input-unit"><input id="temp" name="temp" type="number" inputmode="decimal" step="0.5" value="28"><span class="unit">°C</span></div>
+              <span class="hint">Typical day and night average</span>
+            </div>
+            <div class="field">
+              <label for="water">Water available per season</label>
+              <div class="input-unit"><input id="water" name="water" type="number" inputmode="numeric" step="10" min="0" value="600"><span class="unit">mm</span></div>
+              <span class="hint">Rainfall plus irrigation</span>
+            </div>
+            <div class="field">
+              <label for="crop-choice">Crop</label>
+              <select id="crop-choice" name="crop-choice"><option value="all">All crops (compare)</option></select>
+              <span class="hint">Pick one crop or compare all</span>
+            </div>
+          </div>
+          <div class="form-foot">
+            <button class="btn btn-primary" type="submit">Check suitability</button>
+            <button class="btn btn-ghost" type="button" id="reset-btn">Reset to example</button>
+          </div>
+          <p class="sample-note" id="sample-note">These are example values. Replace them with your own field readings.</p>
+        </form>
+
+        <div class="results" aria-live="polite">
+          <div class="summary" id="summary"></div>
+          <div class="result-list" id="results"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CROP GUIDE -->
+  <section class="section section-alt" id="crops" aria-labelledby="crops-title">
+    <div class="container">
+      <div class="section-head">
+        <p class="eyebrow">Crop guide</p>
+        <h2 id="crops-title">Growing guides</h2>
+        <p class="section-lead">Soil, water, fertiliser and spacing for every crop in the BUMI360 database.</p>
+      </div>
+      <div class="crop-tabs" id="crop-tabs" role="tablist" aria-label="Choose a crop"></div>
+      <article class="panel guide-panel" id="guide-panel" role="tabpanel" tabindex="-1"></article>
+    </div>
+  </section>
+
+  <!-- COMPARE -->
+  <section class="section" id="compare" aria-labelledby="compare-title">
+    <div class="container">
+      <div class="section-head">
+        <p class="eyebrow">Compare</p>
+        <h2 id="compare-title">Crops side by side</h2>
+      </div>
+      <div class="table-scroll panel">
+        <table class="compare-table" id="compare-table"></table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ROTATION -->
+  <section class="section section-alt" id="rotation" aria-labelledby="rotation-title">
+    <div class="container">
+      <div class="section-head">
+        <p class="eyebrow">Crop rotation</p>
+        <h2 id="rotation-title">Plant legumes first</h2>
+        <p class="section-lead">Soybean and peanut fix nitrogen from the air. The crop that follows them starts with richer soil.</p>
+      </div>
+      <div class="rotation-grid" id="rotation-list"></div>
+      <ul class="note-list" id="rotation-notes"></ul>
+    </div>
+  </section>
+
+  <!-- ABOUT -->
+  <section class="section" id="about" aria-labelledby="about-title">
+    <div class="container about-grid">
+      <div>
+        <p class="eyebrow">About</p>
+        <h2 id="about-title">How BUMI360 decides</h2>
+        <p class="section-lead">Each reading is compared with the crop's recommended range. The overall result follows the weakest reading.</p>
+        <div class="table-scroll">
+          <table class="rules-table">
+            <thead><tr><th>Reading</th><th><span class="pill s-ok">Suitable</span></th><th><span class="pill s-warn">With management</span></th><th><span class="pill s-bad">Less suitable</span></th></tr></thead>
+            <tbody>
+              <tr><th>Soil pH</th><td>Within range</td><td>–</td><td>Outside range</td></tr>
+              <tr><th>Temperature</th><td>Within optimum</td><td>Up to 2°C outside</td><td>More than 2°C outside</td></tr>
+              <tr><th>Water</th><td>Within range</td><td>Short by up to half, or excess</td><td>Short by more than half</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="small">Water Spinach and Mustard Greens have no seasonal water figure in mm. For these crops, BUMI360 shows moisture advice and the water reading does not change the result.</p>
+      </div>
+      <div class="about-side">
+        <div class="panel">
+          <h3>Data sources</h3>
+          <p>Crop requirements and fertiliser rates come from the BUMI360 crop database, with references including TNAU, Nepal guidelines and the Department of Agriculture Sarawak, as noted on each crop.</p>
+        </div>
+        <div class="panel">
+          <h3>Coming next</h3>
+          <p>Satellite rainfall (NASA GPM) and soil moisture (NASA SMAP) for Sabah and Sarawak, so your field readings can be filled in from your location.</p>
+        </div>
+        <div class="panel panel-note">
+          <h3>Please note</h3>
+          <p>BUMI360 gives general guidance. Confirm planting decisions with a soil test and your local agriculture officer.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <div class="container footer-inner">
+    <a class="brand brand-small" href="#top"><span>BUMI<b>360</b></span></a>
+    <nav aria-label="Footer">
+      <a href="#check">Field check</a><a href="#crops">Crop guide</a><a href="#compare">Compare</a><a href="#rotation">Rotation</a><a href="#about">About</a>
+    </nav>
+    <p>© <span id="year">2026</span> BUMI360. General guidance only.</p>
+  </div>
+</footer>
+
+<script src="data/crops.js"></script>
+<script src="assets/app.js"></script>
+</body>
+</html>

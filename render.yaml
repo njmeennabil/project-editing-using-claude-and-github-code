@@ -1,0 +1,16 @@
+# Render Blueprint for the BUMI360 Flask API.
+# In Render: New + > Blueprint > pick this repository.
+services:
+  - type: web
+    name: bumi360-api
+    runtime: python
+    plan: free
+    buildCommand: pip install -r backend/requirements.txt
+    startCommand: gunicorn --chdir backend app:app --bind 0.0.0.0:$PORT
+    healthCheckPath: /api/health
+    autoDeploy: true
+    envVars:
+      # Your Vercel address, e.g. https://bumi360.vercel.app (comma-separate several).
+      # Leave unset while testing to allow any website to call the API.
+      - key: ALLOWED_ORIGINS
+        sync: false
