@@ -37,9 +37,9 @@ SHEETS = [
                air_min_mm AS "Air min (mm)", air_max_mm AS "Air maks (mm)",
                air_sasaran_mm AS "Air sasaran (mm)", air_nota AS "Nota air",
                matang_min_hari AS "Matang min (hari)", matang_max_hari AS "Matang maks (hari)",
-               matang_nota AS "Nota matang"
+               matang_nota AS "Nota matang", sumber_rujukan AS "Sumber rujukan"
         FROM tanaman ORDER BY id""",
-     [14, 13, 18, 10, 13, 26, 34, 13, 14, 12, 13, 15, 40, 16, 17, 30]),
+     [14, 13, 18, 10, 13, 26, 34, 13, 14, 12, 13, 15, 40, 16, 17, 30, 26]),
     ("Tanah", """
         SELECT t.nama_bm AS Tanaman, k.tekstur AS Tekstur, k.saliran AS Saliran,
                k.ph_min AS "pH min", k.ph_max AS "pH maks", k.ph_elak_bawah AS "Elak pH bawah",
@@ -57,6 +57,12 @@ SHEETS = [
                b.k2o_min AS "K₂O min", b.k2o_max AS "K₂O maks", b.nota AS Nota
         FROM cadangan_baja b JOIN tanaman t ON t.id = b.tanaman_id ORDER BY t.id, b.id""",
      [14, 10, 18, 8, 8, 10, 10, 9, 9, 32]),
+    ("Program Baja", """
+        SELECT t.nama_bm AS Tanaman, p.jenis_baja AS "Jenis baja", p.kadar_min AS "Kadar min",
+               p.kadar_max AS "Kadar maks", p.unit AS Unit, p.masa_aplikasi AS "Masa aplikasi",
+               p.nota AS Nota
+        FROM program_baja p JOIN tanaman t ON t.id = p.tanaman_id ORDER BY t.id, p.id""",
+     [14, 34, 10, 11, 13, 34, 46]),
     ("Nutrien Khusus", """
         SELECT t.nama_bm AS Tanaman, n.nutrien AS Nutrien, n.kepentingan AS Kepentingan,
                n.sumber_baja AS "Sumber baja", n.kadar_min_kg_ha AS "Kadar min (kg/ha)",
@@ -109,7 +115,7 @@ for name, sql, widths in SHEETS:
             cell.font, cell.border = BODY_FONT, BORDER
             cell.alignment = Alignment(wrap_text=True, vertical="top")
             if isinstance(cell.value, float):
-                cell.number_format = "0.0" if "pH" in str(ws.cell(1, cell.column).value) else "0"
+                cell.number_format = "0.0" if ("pH" in str(ws.cell(1, cell.column).value) or cell.value % 1) else "0"
     for i, w in enumerate(widths, start=1):
         ws.column_dimensions[get_column_letter(i)].width = w
     ws.freeze_panes = "B2"
@@ -159,9 +165,10 @@ for i in range(n_crops):
     ws.cell(r, 1, f"=Tanaman!A{src}")
     ws.cell(r, 2, f'=IF(AND($B$4>=Tanah!D{src},$B$4<=Tanah!E{src}),"Sesuai","Tidak sesuai")')
     ws.cell(r, 3, f'=IF(AND($B$5>=Tanaman!H{src},$B$5<=Tanaman!I{src}),"Optimum","Luar julat optimum")')
-    ws.cell(r, 4, f'=IF($B$6<Tanaman!J{src},"Kurang — perlu pengairan",'
-                  f'IF($B$6>Tanaman!K{src},"Berlebihan — pastikan saliran","Mencukupi"))')
-    ws.cell(r, 5, f'=IF(AND(B{r}="Sesuai",C{r}="Optimum",D{r}="Mencukupi"),"✔ Sesuai ditanam","⚠ Perlu perhatian")')
+    ws.cell(r, 4, f'=IF(Tanaman!J{src}="","Tiada angka mm — kekalkan tanah lembap",'
+                  f'IF($B$6<Tanaman!J{src},"Kurang — perlu pengairan",'
+                  f'IF($B$6>Tanaman!K{src},"Berlebihan — pastikan saliran","Mencukupi")))')
+    ws.cell(r, 5, f'=IF(AND(B{r}="Sesuai",C{r}="Optimum",OR(D{r}="Mencukupi",LEFT(D{r},5)="Tiada")),"✔ Sesuai ditanam","⚠ Perlu perhatian")')
     for c in range(1, 6):
         cell = ws.cell(r, c)
         cell.font, cell.border = BODY_FONT, BORDER

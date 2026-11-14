@@ -104,3 +104,64 @@ INSERT INTO nota_giliran (nota) VALUES
 ('Soya dan kacang tanah ialah legum yang menambah N dalam tanah.'),
 ('Tanaman selepas kacang tanah dilaporkan meningkat hasil sekitar 25%.'),
 ('Susunan biasa: legum dahulu, kemudian jagung.');
+
+-- =====================================================================
+-- TANAMAN LOKAL: SAYUR DAUN (7. Kangkung, 8. Sawi)
+-- =====================================================================
+INSERT INTO tanaman (id, kod, nama_bm, nama_en, nama_saintifik, jenis, menetapkan_n,
+                     nutrien_utama, keperluan_n,
+                     suhu_min_c, suhu_max_c,
+                     air_min_mm, air_max_mm, air_sasaran_mm, air_nota,
+                     matang_min_hari, matang_max_hari, matang_nota, sumber_rujukan) VALUES
+(4, 'KANGKUNG', 'Kangkung', 'Water Spinach', 'Ipomoea aquatica', 'sayur daun', 0,
+    'Nitrogen (N)', 'Perlu N untuk pertumbuhan daun dan batang',
+    23, 30,
+    NULL, NULL, NULL, 'Perlukan bekalan air mencukupi dan kelembapan tanah yang konsisten. Tidak tahan kekeringan terlalu lama.',
+    28, 35, '4–5 minggu selepas menanam', 'Jabatan Pertanian Sarawak'),
+(5, 'SAWI', 'Sawi', 'Mustard Greens', 'Brassica juncea', 'sayur daun', 0,
+    'Nitrogen (N)', 'Perlu N untuk pertumbuhan daun',
+    20, 30,
+    NULL, NULL, NULL, 'Perlukan bekalan air konsisten untuk pertumbuhan daun. Elakkan tanah terlalu kering atau air bertakung.',
+    NULL, NULL, NULL, NULL);
+
+INSERT INTO keperluan_tanah (tanaman_id, tekstur, saliran, ph_min, ph_max, ph_elak_bawah, nota) VALUES
+(4, 'Gambut, liat ringan atau tanah mineral', 'Perlu diurus dengan baik', 5.5, 6.5, NULL, NULL),
+(5, 'Lom subur, kaya bahan organik', 'Baik', 5.5, 6.5, NULL, 'pH sekitar 5.5–6.5 sebagai sasaran pengurusan tanah.');
+
+-- Kangkung: dos nutrien dikira daripada 0.5 t/ha NPK 15:15:15 (500 kg × 15% = 75 kg/ha).
+-- Sawi: gred NPK tidak dinyatakan, jadi dos nutrien tidak dikira (lihat program_baja).
+INSERT INTO cadangan_baja (tanaman_id, sumber, keadaan,
+                           n_min, n_max, p2o5_min, p2o5_max, k2o_min, k2o_max, nota) VALUES
+(4, 'Jabatan Pertanian Sarawak', 'Kadar rujukan semusim', 75, 75, 75, 75, 75, 75,
+    'Dikira daripada 0.5 t/ha NPK 15:15:15 (500 kg × 15%).');
+
+INSERT INTO program_baja (tanaman_id, jenis_baja, kadar_min, kadar_max, unit, masa_aplikasi, nota) VALUES
+(4, 'Baja organik',  4,   4,   't/ha',        'Seminggu sebelum menanam', 'Digaul ke dalam tanah.'),
+(4, 'NPK 15:15:15',  0.5, 0.5, 't/ha/musim',  'Minggu ke-2 dan ke-3 selepas menanam', 'Kadar rujukan Jabatan Pertanian Sarawak.'),
+(5, 'Baja organik (tahi ayam dikomposkan)', 1, 2, 'kg/m²', 'Sebelum menanam', NULL),
+(5, 'Dolomit',       100, 200, 'g/m²',        'Sebelum menanam', 'Membantu pengurusan pH; membekalkan kalsium dan magnesium.'),
+(5, 'NPK',           30,  30,  'g/m²',        'Sebelum menanam', 'Gred NPK tidak dinyatakan.'),
+(5, 'Baja tambahan', 30,  40,  'g/m²/minggu', 'Setiap minggu sehingga menuai', 'Sesuaikan dengan keadaan tanah dan pertumbuhan tanaman.');
+
+INSERT INTO nutrien_khusus (tanaman_id, nutrien, kepentingan, sumber_baja,
+                            kadar_min_kg_ha, kadar_max_kg_ha, masa_aplikasi) VALUES
+(5, 'Fosforus (P)', 'Membantu perkembangan akar', NULL, NULL, NULL, NULL),
+(5, 'Kalium (K)',   'Membantu pertumbuhan dan ketahanan tanaman', NULL, NULL, NULL, NULL),
+(5, 'Kalsium dan Magnesium (Ca, Mg)', 'Dibekalkan melalui dolomit', 'Dolomit', 1000, 2000,
+    'Sebelum menanam (100–200 g/m²)');
+
+INSERT INTO amalan (tanaman_id, kategori, perkara) VALUES
+(4, 'tanam', 'Boleh ditanam sepanjang tahun jika bekalan air dan saliran diuruskan dengan baik.'),
+(4, 'air',   'Pengairan secara manual atau sistem pemercik.'),
+(4, 'air',   'Elakkan kekeringan terlalu lama; kekalkan kelembapan tanah.'),
+(4, 'baja',  'Gaul baja organik ke dalam tanah seminggu sebelum menanam.'),
+(4, 'baja',  'Beri NPK pada minggu ke-2 dan ke-3 selepas menanam.'),
+(5, 'air',   'Elakkan tanah terlalu kering atau air bertakung.'),
+(5, 'baja',  'Pembajaan perlu disesuaikan dengan keadaan tanah dan pertumbuhan tanaman.'),
+(5, 'tanah', 'Guna dolomit untuk mengurus pH tanah.');
+
+INSERT INTO jarak_tanaman (tanaman_id, jenis_varieti,
+                           antara_baris_min_cm, antara_baris_max_cm,
+                           dalam_baris_min_cm, dalam_baris_max_cm) VALUES
+(4, NULL, 20, 20, 10, 10),
+(5, NULL, NULL, NULL, 20, 25);

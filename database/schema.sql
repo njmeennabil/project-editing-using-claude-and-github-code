@@ -5,6 +5,7 @@
 PRAGMA foreign_keys = ON;
 
 DROP VIEW  IF EXISTS v_perbandingan;
+DROP TABLE IF EXISTS program_baja;
 DROP TABLE IF EXISTS nota_giliran;
 DROP TABLE IF EXISTS giliran_tanaman;
 DROP TABLE IF EXISTS jarak_tanaman;
@@ -22,7 +23,7 @@ CREATE TABLE tanaman (
     nama_bm          TEXT NOT NULL,
     nama_en          TEXT NOT NULL,
     nama_saintifik   TEXT,
-    jenis            TEXT NOT NULL CHECK (jenis IN ('bijirin', 'legum')),
+    jenis            TEXT NOT NULL CHECK (jenis IN ('bijirin', 'legum', 'sayur daun')),
     menetapkan_n     INTEGER NOT NULL CHECK (menetapkan_n IN (0, 1)),
     nutrien_utama    TEXT NOT NULL,                 -- nutrien paling penting
     keperluan_n      TEXT NOT NULL,                 -- ringkasan keperluan nitrogen
@@ -34,7 +35,8 @@ CREATE TABLE tanaman (
     air_nota         TEXT,
     matang_min_hari  INTEGER,
     matang_max_hari  INTEGER,
-    matang_nota      TEXT
+    matang_nota      TEXT,
+    sumber_rujukan   TEXT                           -- sumber data (jika dinyatakan)
 );
 
 -- Keperluan tanah
@@ -66,6 +68,19 @@ CREATE TABLE cadangan_baja (
     p2o5_min    REAL, p2o5_max  REAL,
     k2o_min     REAL, k2o_max   REAL,
     nota        TEXT
+);
+
+-- Program pembajaan ikut produk baja, dalam unit asal sumber
+-- (cth. t/ha, g/m²). Untuk dos dalam kg nutrien/ha, lihat cadangan_baja.
+CREATE TABLE program_baja (
+    id            INTEGER PRIMARY KEY,
+    tanaman_id    INTEGER NOT NULL REFERENCES tanaman(id) ON DELETE CASCADE,
+    jenis_baja    TEXT NOT NULL,                    -- cth. 'NPK 15:15:15', 'Dolomit'
+    kadar_min     REAL,
+    kadar_max     REAL,
+    unit          TEXT NOT NULL,                    -- cth. 't/ha', 'g/m²', 'g/m²/minggu'
+    masa_aplikasi TEXT,
+    nota          TEXT
 );
 
 -- Nutrien sekunder / mikro yang penting
@@ -122,12 +137,14 @@ SELECT
     t.jenis,
     printf('%.1f–%.1f', kt.ph_min, kt.ph_max)              AS julat_ph,
     printf('%g–%g', t.suhu_min_c, t.suhu_max_c)        AS suhu_c,
-    printf('%g–%g', t.air_min_mm, t.air_max_mm)        AS air_mm,
+    CASE WHEN t.air_min_mm IS NULL THEN 'Konsisten (tiada angka mm)'
+         ELSE printf('%g–%g', t.air_min_mm, t.air_max_mm) END AS air_mm,
     t.keperluan_n                               AS nitrogen,
     t.nutrien_utama,
     (SELECT group_concat(p.peringkat, ', ')
        FROM peringkat_kritikal_air p WHERE p.tanaman_id = t.id) AS peringkat_kritikal_air,
-    CASE WHEN t.matang_min_hari = t.matang_max_hari
+    CASE WHEN t.matang_min_hari IS NULL THEN NULL
+         WHEN t.matang_min_hari = t.matang_max_hari
          THEN '~' || t.matang_min_hari
          ELSE t.matang_min_hari || '–' || t.matang_max_hari END AS matang_hari
 FROM tanaman t

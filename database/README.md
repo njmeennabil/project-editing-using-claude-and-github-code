@@ -1,6 +1,6 @@
-# Database Tanaman: Jagung, Soya, Kacang Tanah
+# Database Tanaman
 
-Database SQLite untuk keperluan agronomi tiga tanaman: suhu, air, tanah, baja, jarak tanaman dan giliran tanaman.
+Database SQLite untuk keperluan agronomi jagung, soya, kacang tanah, kangkung dan sawi: suhu, air, tanah, baja, jarak tanaman dan giliran tanaman.
 
 ## Fail
 
@@ -28,6 +28,7 @@ python3 export_excel.py
 | `keperluan_tanah` | Tekstur, saliran, julat pH |
 | `peringkat_kritikal_air` | Peringkat pertumbuhan yang paling memerlukan air |
 | `cadangan_baja` | Dos N, P₂O₅, K₂O (kg/ha) mengikut sumber (TNAU, Nepal, umum) |
+| `program_baja` | Jadual pembajaan ikut produk (baja organik, NPK, dolomit) dalam unit asal (t/ha, g/m²) |
 | `nutrien_khusus` | Nutrien sekunder/mikro: Ca, Zn, Mo, P dan kadar aplikasi |
 | `amalan` | Nota pengurusan (baja, air, tanah, tanam, tuai) |
 | `jarak_tanaman` | Jarak antara baris dan dalam baris (cm) |
