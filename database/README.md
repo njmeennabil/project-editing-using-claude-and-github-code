@@ -12,6 +12,7 @@ Database SQLite untuk keperluan agronomi jagung, soya, kacang tanah, kangkung da
 | `tanaman.db` | Database SQLite yang sudah siap |
 | `export_excel.py` | Eksport database ke `tanaman.xlsx` |
 | `export_json.py` | Eksport data (bahasa Inggeris) untuk website BUMI360 ke `docs/data/` |
+| `crop_data.py` | Baca `tanaman.db` dalam bahasa Inggeris (digunakan oleh Flask API dan `export_json.py`) |
 | `translations_en.py` | Terjemahan bahasa Inggeris untuk teks dalam database |
 | `tanaman.xlsx` | Versi Excel: satu helaian bagi setiap jadual + helaian *Semak Kesesuaian* |
 

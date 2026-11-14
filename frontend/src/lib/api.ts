@@ -1,0 +1,49 @@
+// Calls to the BUMI360 Flask API. Used on the server (prerender) and in the browser.
+import type { CheckResponse, Crop, FieldInput, RotationItem, SiteData } from "./types";
+
+export const API_URL = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000").replace(/\/+$/, "");
+
+/** The server answered, but with an error message (e.g. "'ph' must be a number"). */
+export class ApiError extends Error {}
+
+async function request<T>(path: string, init: RequestInit = {}, timeoutMs = 15000): Promise<T> {
+  // Abort on timeout or when the caller aborts (works on older phone browsers too).
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), timeoutMs);
+  const outer = init.signal;
+  const onAbort = () => ctrl.abort();
+  if (outer) {
+    if (outer.aborted) ctrl.abort();
+    else outer.addEventListener("abort", onAbort, { once: true });
+  }
+  try {
+    const res = await fetch(`${API_URL}${path}`, { ...init, signal: ctrl.signal });
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok) throw new ApiError(body.error || `The server returned an error (${res.status}).`);
+    return body as T;
+  } finally {
+    clearTimeout(timer);
+    outer?.removeEventListener("abort", onAbort);
+  }
+}
+
+export async function getSiteData(timeoutMs?: number): Promise<SiteData> {
+  const [crops, rotation] = await Promise.all([
+    request<{ crops: Crop[] }>("/api/crops", {}, timeoutMs),
+    request<{ rotation: RotationItem[]; notes: string[] }>("/api/rotation", {}, timeoutMs),
+  ]);
+  return { crops: crops.crops, rotation: rotation.rotation, notes: rotation.notes };
+}
+
+export function checkField(input: FieldInput, signal?: AbortSignal, timeoutMs?: number): Promise<CheckResponse> {
+  return request<CheckResponse>(
+    "/api/check",
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(input),
+      signal,
+    },
+    timeoutMs,
+  );
+}
