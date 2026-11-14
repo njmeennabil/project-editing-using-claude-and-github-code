@@ -10,11 +10,14 @@ Database SQLite untuk keperluan agronomi tiga tanaman: suhu, air, tanah, baja, j
 | `seed.sql` | Data tanaman |
 | `build_db.py` | Bina semula `tanaman.db` daripada dua fail di atas |
 | `tanaman.db` | Database SQLite yang sudah siap |
+| `export_excel.py` | Eksport database ke `tanaman.xlsx` |
+| `tanaman.xlsx` | Versi Excel: satu helaian bagi setiap jadual + helaian *Semak Kesesuaian* |
 
 Untuk bina semula selepas mengubah `seed.sql`:
 
 ```bash
 python3 build_db.py
+python3 export_excel.py
 ```
 
 ## Jadual
