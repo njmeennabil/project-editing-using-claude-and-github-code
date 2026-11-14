@@ -21,7 +21,9 @@ python3 -m venv .venv
 | GET | `/api/crops` | All crops with full growing guides |
 | GET | `/api/crops/<code>` | One crop, e.g. `/api/crops/JAGUNG` |
 | GET | `/api/rotation` | Rotation pairs and notes |
-| GET / POST | `/api/check` | Suitability for `ph`, `temp`, `water`, optional `crop` (`all` or a code) |
+| GET | `/api/locations` | Sarawak's 12 divisions |
+| GET | `/api/climate?location=KUCHING` | Monthly NASA POWER temperature and rainfall (or `?lat=&lon=`) |
+| GET / POST | `/api/check` | Suitability. Either `ph`, `temp`, `water`, or `ph`, `location` (or `lat`/`lon`), `month`, `irrigation`. Optional `crop` (`all` or a code) |
 
 Example:
 
@@ -31,7 +33,29 @@ curl -X POST http://localhost:5000/api/check \
   -d '{"ph": 5.8, "temp": 28, "water": 600, "crop": "all"}'
 ```
 
+With NASA climate:
+
+```bash
+curl -X POST http://localhost:5000/api/check \
+  -H "Content-Type: application/json" \
+  -d '{"ph": 5.8, "location": "MIRI", "month": 3, "irrigation": 0, "crop": "JAGUNG"}'
+```
+
+For each crop, BUMI360 adds up NASA rainfall and averages NASA temperature over that crop's growing
+season, starting on the 1st of the planting month. Extra irrigation is added to the rainfall.
+
 The rules and their thresholds are in `rules.py`.
+
+## NASA POWER climate data
+
+- `locations.py`: Sarawak's 12 divisions and their coordinates.
+- `nasa_power.py`: reads the NASA POWER Climatology API (no account needed) and works out each crop's season.
+- `data/sarawak_climate.json`: saved data for the 12 divisions, so they work even if NASA is slow.
+  Refresh it with `python3 scripts/update_climate.py`.
+- GPS locations are fetched live from NASA and kept in memory.
+
+Data obtained from the NASA Langley Research Center (LaRC) POWER Project funded through the
+NASA Earth Science/Applied Science Program.
 
 ## Settings
 

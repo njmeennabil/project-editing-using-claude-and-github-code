@@ -1,5 +1,5 @@
 // Calls to the BUMI360 Flask API. Used on the server (prerender) and in the browser.
-import type { CheckResponse, Crop, FieldInput, RotationItem, SiteData } from "./types";
+import type { CheckResponse, Crop, FieldInput, Place, RotationItem, SiteData } from "./types";
 
 export const API_URL = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000").replace(/\/+$/, "");
 
@@ -28,11 +28,21 @@ async function request<T>(path: string, init: RequestInit = {}, timeoutMs = 1500
 }
 
 export async function getSiteData(timeoutMs?: number): Promise<SiteData> {
-  const [crops, rotation] = await Promise.all([
+  const [crops, rotation, places] = await Promise.all([
     request<{ crops: Crop[] }>("/api/crops", {}, timeoutMs),
     request<{ rotation: RotationItem[]; notes: string[] }>("/api/rotation", {}, timeoutMs),
+    request<{ locations: Place[] }>("/api/locations", {}, timeoutMs),
   ]);
-  return { crops: crops.crops, rotation: rotation.rotation, notes: rotation.notes };
+  return { crops: crops.crops, rotation: rotation.rotation, notes: rotation.notes, locations: places.locations };
+}
+
+/** What the API needs for each mode: NASA climate (place + month) or manual readings. */
+export function checkPayload(input: FieldInput) {
+  if (input.mode === "manual") {
+    return { ph: input.ph, temp: input.temp, water: input.water, crop: input.crop };
+  }
+  const place = input.location === "GPS" ? { lat: input.lat, lon: input.lon } : { location: input.location };
+  return { ph: input.ph, crop: input.crop, month: input.month, irrigation: input.irrigation, ...place };
 }
 
 export function checkField(input: FieldInput, signal?: AbortSignal, timeoutMs?: number): Promise<CheckResponse> {
@@ -41,7 +51,7 @@ export function checkField(input: FieldInput, signal?: AbortSignal, timeoutMs?: 
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(input),
+      body: JSON.stringify(checkPayload(input)),
       signal,
     },
     timeoutMs,

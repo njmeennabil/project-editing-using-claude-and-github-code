@@ -41,18 +41,25 @@ export function About() {
             </table>
           </div>
           <p className="mt-3 max-w-[65ch] text-sm text-muted">
-            Water Spinach and Mustard Greens have no seasonal water figure in mm. For these crops, BUMI360 shows moisture
-            advice and the water reading does not change the result.
+            With NASA climate, temperature is the average over the crop&apos;s growing season and water is the season&apos;s
+            rainfall plus any extra irrigation you enter. Water Spinach and Mustard Greens have no seasonal water figure in
+            mm, so BUMI360 shows moisture advice and water does not change their result. Mustard Greens has no maturity
+            figure, so a 30-day season is assumed.
           </p>
         </div>
         <div className="grid content-start gap-3.5">
-          <AboutCard title="Data sources">
+          <AboutCard title="Climate data">
+            Temperature and rainfall come from NASA POWER: 25-year monthly averages (2001–2025) for each Sarawak division or
+            your GPS location. BUMI360 adds up the rain over each crop&apos;s own growing season, starting from your planting
+            month. NASA data describes an area of about 50 km, so local conditions can differ. Data obtained from the NASA
+            Langley Research Center (LaRC) POWER Project funded through the NASA Earth Science/Applied Science Program.
+          </AboutCard>
+          <AboutCard title="Crop data">
             Crop requirements and fertiliser rates come from the BUMI360 crop database, with references including TNAU, Nepal
             guidelines and the Department of Agriculture Sarawak, as noted on each crop.
           </AboutCard>
           <AboutCard title="Coming next">
-            Satellite rainfall (NASA GPM) and soil moisture (NASA SMAP) for Sabah and Sarawak, so your field readings can be
-            filled in from your location.
+            Finer satellite rainfall (NASA GPM) and current soil moisture (NASA SMAP) for Sarawak.
           </AboutCard>
           <AboutCard title="Please note" strong>
             BUMI360 gives general guidance. Confirm planting decisions with a soil test and your local agriculture officer.

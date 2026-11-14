@@ -22,7 +22,27 @@ export interface Check {
   message: string;
 }
 
+export interface ClimateInfo {
+  source: string;
+  location: string;
+  months: string;
+  days: number;
+  days_assumed: boolean;
+  temp_c: number;
+  rain_mm: number;
+  irrigation_mm: number;
+  water_mm: number;
+}
+
+export interface Place {
+  code: string;
+  name: string;
+  lat: number;
+  lon: number;
+}
+
 export interface CropResult {
+  climate?: ClimateInfo;
   code: string;
   name: string;
   local_name: string;
@@ -33,7 +53,20 @@ export interface CropResult {
 }
 
 export interface CheckResponse {
-  input: { ph: number | null; temp: number | null; water: number | null; crop: string };
+  input: {
+    ph: number | null;
+    temp: number | null;
+    water: number | null;
+    crop: string;
+    climate: {
+      source: string;
+      period: string | null;
+      location: Place;
+      month: number;
+      month_name: string;
+      irrigation: number;
+    } | null;
+  };
   counts: Record<OverallStatus, number>;
   results: CropResult[];
 }
@@ -115,11 +148,23 @@ export interface SiteData {
   crops: Crop[];
   rotation: RotationItem[];
   notes: string[];
+  locations: Place[];
 }
 
+/** "nasa": temperature and rainfall from NASA POWER for a place and planting month. */
+export type ClimateMode = "nasa" | "manual";
+
 export interface FieldInput {
+  mode: ClimateMode;
   ph: string;
+  crop: string;
+  // manual mode
   temp: string;
   water: string;
-  crop: string;
+  // NASA mode
+  location: string; // division code, or "GPS"
+  lat: string;
+  lon: string;
+  month: string; // "1"–"12"
+  irrigation: string;
 }

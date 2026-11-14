@@ -140,9 +140,20 @@ def assess(crop, ph=None, temp=None, water=None):
     }
 
 
-def assess_all(crops, ph=None, temp=None, water=None):
-    """Assess every crop and sort: most suitable first, then database order."""
-    results = [assess(c, ph, temp, water) for c in crops]
+def assess_all(crops, ph=None, temp=None, water=None, per_crop=None):
+    """Assess every crop and sort: most suitable first, then database order.
+
+    per_crop(crop) may return (temp, water, extra) to give each crop its own
+    temperature and water, e.g. NASA climate over that crop's growing season.
+    `extra` is added to the result as "climate".
+    """
+    results = []
+    for c in crops:
+        t, w, extra = (temp, water, None) if per_crop is None else per_crop(c)
+        r = assess(c, ph, t, w)
+        if extra is not None:
+            r["climate"] = extra
+        results.append(r)
     order = {c["code"]: c["id"] for c in crops}
     results.sort(key=lambda r: (RANK[r["status"]], order[r["code"]]))
     counts = {s: sum(r["status"] == s for r in results) for s in ("ok", "warn", "bad", "none")}

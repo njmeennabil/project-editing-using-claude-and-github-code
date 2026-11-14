@@ -14,9 +14,19 @@ frontend/   Next.js + React + Tailwind  ── hos: Vercel
         ▼
 backend/    Python Flask                ── hos: Render (render.yaml)
         │   baca dan terjemah ke bahasa Inggeris
-        ▼
-database/   SQLite (tanaman.db) + Excel, dalam bahasa Melayu
+        ├─► database/   SQLite (tanaman.db) + Excel, dalam bahasa Melayu
+        └─► NASA POWER  suhu dan hujan bulanan untuk 12 bahagian Sarawak / lokasi GPS
 ```
+
+## Data NASA
+
+Petani pilih bahagian di Sarawak (atau guna GPS telefon) dan bulan tanam. Flask ambil purata suhu dan
+hujan 25 tahun (2001–2025) dari NASA POWER, kemudian kira hujan dan suhu **untuk tempoh setiap tanaman**.
+Contoh: jagung (65 hari) yang ditanam pada bulan Mac di Kuching dapat ~614 mm hujan; di Miri ~366 mm.
+
+- Data 12 bahagian disimpan dalam `backend/data/sarawak_climate.json`.
+  Kemas kini: `cd backend && .venv/bin/python scripts/update_climate.py`
+- NASA POWER tidak perlukan akaun. GPM dan SMAP (fasa seterusnya) perlukan akaun NASA Earthdata.
 
 | Folder | Isi |
 |---|---|

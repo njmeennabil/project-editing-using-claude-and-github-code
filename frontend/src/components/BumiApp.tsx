@@ -87,7 +87,7 @@ export function BumiApp({ initialData, initialCheck }: { initialData: SiteData |
 
   return (
     <>
-      <FieldCheck crops={data.crops} initialCheck={initialCheck} onViewGuide={viewGuide} />
+      <FieldCheck crops={data.crops} locations={data.locations} initialCheck={initialCheck} onViewGuide={viewGuide} />
       <CropGuide crops={data.crops} rotation={data.rotation} selected={selected} onSelect={setSelected} />
       <Compare crops={data.crops} />
       <Rotation rotation={data.rotation} notes={data.notes} />

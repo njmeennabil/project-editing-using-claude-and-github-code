@@ -7,7 +7,9 @@ import { getInitialData } from "@/lib/initial-data";
 
 export default async function Home() {
   const initial = await getInitialData();
-  const site = initial ? { crops: initial.crops, rotation: initial.rotation, notes: initial.notes } : null;
+  const site = initial
+    ? { crops: initial.crops, rotation: initial.rotation, notes: initial.notes, locations: initial.locations }
+    : null;
 
   return (
     <div id="top">

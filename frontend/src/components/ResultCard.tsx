@@ -1,3 +1,4 @@
+import { num } from "@/lib/format";
 import type { CropResult } from "@/lib/types";
 import { Meter } from "./Meter";
 import { StatusIcon, StatusPill } from "./Status";
@@ -14,6 +15,15 @@ export function ResultCard({ result, onViewGuide }: { result: CropResult; onView
         </div>
         <StatusPill status={result.status}>{result.label}</StatusPill>
       </div>
+
+      {result.climate && (
+        <p className="rounded-[10px] border border-line bg-bg px-3 py-2 text-[0.82rem] leading-snug text-muted">
+          <span className="font-semibold text-fg">{result.climate.source}</span> · {result.climate.location} ·{" "}
+          {result.climate.months} ({result.climate.days} days{result.climate.days_assumed ? ", assumed" : ""}):{" "}
+          {num(result.climate.temp_c)}°C average, {num(result.climate.rain_mm)} mm rain
+          {result.climate.irrigation_mm ? ` + ${num(result.climate.irrigation_mm)} mm irrigation` : ""}
+        </p>
+      )}
 
       <ul className="grid gap-3.5">
         {result.checks.map((c) => (
