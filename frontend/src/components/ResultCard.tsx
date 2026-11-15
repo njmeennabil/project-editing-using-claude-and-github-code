@@ -1,11 +1,14 @@
 import { num } from "@/lib/format";
 import type { CropResult } from "@/lib/types";
 import { Meter } from "./Meter";
-import { StatusIcon, StatusPill } from "./Status";
+import { STATUS_COLOR, StatusIcon, StatusPill } from "./Status";
 
 export function ResultCard({ result, onViewGuide }: { result: CropResult; onViewGuide: (code: string) => void }) {
   return (
-    <article className="grid min-w-0 gap-3.5 rounded-[14px] border border-line bg-surface px-5 py-[18px]">
+    <article
+      className="grid min-w-0 gap-3.5 rounded-[14px] border border-line border-t-[3px] bg-surface px-5 py-[18px]"
+      style={{ borderTopColor: STATUS_COLOR[result.status] }}
+    >
       <div className="flex flex-wrap items-start justify-between gap-2.5">
         <div>
           <h4 className="font-display text-xl font-semibold">{result.name}</h4>
@@ -38,7 +41,7 @@ export function ResultCard({ result, onViewGuide }: { result: CropResult; onView
                 {c.your_value_text ? ` · ${c.your_value_text}` : ""}
               </span>
             </div>
-            {c.meter && <Meter meter={c.meter} />}
+            {c.meter && <Meter meter={c.meter} status={c.status} />}
             <p className="text-[0.9rem]">
               {c.title && <strong className="font-bold">{c.title}. </strong>}
               {c.message}
