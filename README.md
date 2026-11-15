@@ -41,7 +41,17 @@ Contoh: jagung (65 hari) yang ditanam pada bulan Mac di Kuching dapat ~614 mm hu
 
 - Data 12 bahagian disimpan dalam `backend/data/sarawak_climate.json`.
   Kemas kini: `cd backend && .venv/bin/python scripts/update_climate.py`
-- NASA POWER tidak perlukan akaun. GPM dan SMAP (fasa seterusnya) perlukan akaun NASA Earthdata.
+- NASA POWER tidak perlukan akaun.
+
+### Hujan NASA GPM (fasa 3)
+- Hujan untuk Sarawak datang daripada **NASA GPM IMERG** (~10 km): purata bulanan 2001–2024 dan 60 hari terkini.
+  Suhu kekal daripada NASA POWER.
+- GitHub Actions (`.github/workflows/gpm.yml`) memuat turun data setiap **Isnin** dan menyimpan
+  `backend/data/gpm_sarawak.json`. Ia perlukan secret repo `EARTHDATA_TOKEN`.
+- **Token NASA tamat selepas 60 hari.** Bila larian mingguan gagal ("NASA refused access"), jana token baru di
+  urs.earthdata.nasa.gov dan gantikan secret `EARTHDATA_TOKEN`.
+- Markah *Next crop*: iklim 40, giliran 30, pH 15, **hujan terkini 15**.
+- Peta: lapisan *Expected rain* dan *Last 60 days*.
 
 | Folder | Isi |
 |---|---|

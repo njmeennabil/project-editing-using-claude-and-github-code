@@ -187,8 +187,8 @@ export interface PlanOption {
   local_name: string;
   score: number;
   verdict: string;
-  breakdown: { climate: number; rotation: number; soil: number };
-  max: { climate: number; rotation: number; soil: number };
+  breakdown: { climate: number; rotation: number; soil: number; current?: number };
+  max: { climate: number; rotation: number; soil: number; current?: number };
   rotation: { rating: string; reason: string; verified: boolean; source: string };
   season: {
     temp_c: number;
@@ -208,6 +208,7 @@ export interface PlanResponse {
   input: { current: string; planted: string; ph: number; irrigation: number; prep_days: number };
   climate: { source: string; period: string | null };
   location: Place;
+  recent: RecentRain | null;
   timeline: {
     current: { code: string; name: string; local_name: string };
     planted: string;
@@ -247,4 +248,23 @@ export interface MapPlace {
   lon: string;
   name: string;
   nonce: number;
+}
+
+export interface RecentRain {
+  start: string;
+  end: string;
+  days: number;
+  total_mm: number;
+  normal_mm: number;
+  ratio: number;
+}
+
+export interface MapRain {
+  available: boolean;
+  grid: { lon0: number; lat0: number; step: number; nlon: number; nlat: number };
+  crop: { code: string; name: string };
+  season: { planted: string; days: number; months: string; total_mm: (number | null)[][]; min: number | null; max: number | null };
+  recent: { start: string; end: string; days: number; ratio: (number | null)[][] } | null;
+  normals_period: string;
+  source: string;
 }

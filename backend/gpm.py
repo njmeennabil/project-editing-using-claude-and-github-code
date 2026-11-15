@@ -11,6 +11,7 @@ BUMI360 falls back to NASA POWER rainfall.
 """
 import json
 import math
+import re
 from pathlib import Path
 
 DATA_FILE = Path(__file__).resolve().parent / "data" / "gpm_sarawak.json"
@@ -99,5 +100,7 @@ def source_label(climate):
 
 def period_label(climate):
     if climate.get("rain_source") == "NASA GPM IMERG":
-        return f"rain {climate['rain_period']} (GPM), temperature {climate.get('period', '')}"
+        years = re.findall(r"(\d{4})", climate.get("period") or "")
+        temp = f"{years[0]}–{years[-1]}" if len(years) >= 2 else "long-term"
+        return f"rain {climate['rain_period']} (GPM), temperature {temp} (POWER)"
     return climate.get("period")

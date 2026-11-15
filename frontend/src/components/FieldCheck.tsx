@@ -213,7 +213,7 @@ export function FieldCheck({
                 </div>
                 <span className="text-[0.8rem] text-muted">
                   {form.mode === "nasa"
-                    ? "Uses NASA POWER climate averages (built from satellite and weather observations), worked out for each crop's growing season."
+                    ? "Uses NASA GPM satellite rainfall (about 10 km) and NASA POWER temperature, worked out for each crop's growing season."
                     : "Type in your own temperature and water readings."}
                 </span>
               </fieldset>

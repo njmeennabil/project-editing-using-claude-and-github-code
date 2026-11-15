@@ -49,15 +49,24 @@ export function About() {
         </div>
         <div className="grid content-start gap-3.5">
           <AboutCard title="Climate data">
-            Temperature and rainfall come from NASA POWER: 25-year monthly averages (2001–2025) for each Sarawak division or
-            your GPS location. BUMI360 adds up the rain over each crop&apos;s own growing season, starting from your planting
-            month. NASA data describes an area of about 50 km, so local conditions can differ. Data obtained from the NASA
-            Langley Research Center (LaRC) POWER Project funded through the NASA Earth Science/Applied Science Program.
+            Rainfall comes from NASA GPM IMERG V07 at about 10 km: monthly normals for 2001–2024 (IMERG Final) and the last
+            60 days (IMERG Late), updated every week. Temperature comes from NASA POWER 25-year averages (2001–2025). BUMI360
+            adds up each crop&apos;s own growing season from your planting date. GPM IMERG data provided by NASA Goddard Earth
+            Sciences Data and Information Services Center (GES DISC); temperature data from the NASA Langley Research Center
+            (LaRC) POWER Project, funded through the NASA Earth Science/Applied Science Program.
+          </AboutCard>
+          <AboutCard title="Explore the data in NASA Giovanni">
+            Open{" "}
+            <a href="https://giovanni.gsfc.nasa.gov/giovanni/" target="_blank" rel="noopener" className="font-semibold text-fg underline">
+              NASA Giovanni
+            </a>
+            , choose <em>Time Averaged Map</em>, search for <em>GPM_3IMERGM</em> (IMERG monthly precipitation), and set the
+            region to <em>109.5, 0.8, 115.8, 5.1</em> (Sarawak) to see the same rainfall data BUMI360 uses.
           </AboutCard>
           <AboutCard title="Next-crop score">
-            Each crop gets up to 45 points for climate (NASA temperature and rainfall over its own season after your
-            harvest), 35 for rotation after your current crop, and 20 for soil pH. Most rotation ratings are drafts from
-            general agronomy and are awaiting expert review.
+            Each crop gets up to 40 points for climate (temperature and rainfall over its own season after your harvest), 30
+            for rotation after your current crop, 15 for soil pH and 15 for recent rain (the last 60 days against normal).
+            Most rotation ratings are drafts from general agronomy and are awaiting expert review.
           </AboutCard>
           <AboutCard title="Crop data">
             Crop requirements and fertiliser rates come from the BUMI360 crop database, with references including TNAU, Nepal
@@ -68,7 +77,7 @@ export function About() {
             (citypopulation.de, CC BY 3.0), with Sarawak&apos;s districts merged into its 12 divisions by BUMI360.
           </AboutCard>
           <AboutCard title="Coming next">
-            Finer satellite rainfall (NASA GPM) and current soil moisture (NASA SMAP) for Sarawak.
+            Current soil moisture from NASA SMAP, and seasonal forecasts.
           </AboutCard>
           <AboutCard title="Please note" strong>
             BUMI360 gives general guidance. Confirm planting decisions with a soil test and your local agriculture officer.

@@ -1,5 +1,5 @@
 // Calls to the BUMI360 Flask API. Used on the server (prerender) and in the browser.
-import type { CheckResponse, Crop, FieldInput, MapSuitability, Place, PlanInput, PlanResponse, RotationItem, SiteData } from "./types";
+import type { CheckResponse, Crop, FieldInput, MapRain, MapSuitability, Place, PlanInput, PlanResponse, RotationItem, SiteData } from "./types";
 
 export const API_URL = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000").replace(/\/+$/, "");
 
@@ -93,4 +93,9 @@ export function getMapSuitability(
     params.set("lon", q.lon);
   }
   return request<MapSuitability>(`/api/map/suitability?${params}`, { signal }, 70000);
+}
+
+export function getMapRain(q: { crop: string; planted: string }, signal?: AbortSignal): Promise<MapRain> {
+  const params = new URLSearchParams({ crop: q.crop, planted: q.planted });
+  return request<MapRain>(`/api/map/rain?${params}`, { signal }, 70000);
 }

@@ -3,15 +3,68 @@
 import "leaflet/dist/leaflet.css";
 import type * as Leaflet from "leaflet";
 import { useEffect, useRef, useState } from "react";
-import { ApiError, getMapSuitability } from "@/lib/api";
+import { ApiError, getMapRain, getMapSuitability } from "@/lib/api";
 import { DEFAULT_PLAN } from "@/lib/defaults";
 import { num } from "@/lib/format";
-import type { Crop, MapScore, MapSuitability, Place } from "@/lib/types";
+import type { Crop, MapRain, MapScore, MapSuitability, Place } from "@/lib/types";
 import { Container, Eyebrow, SectionTitle } from "./Container";
 import { FieldShell, SelectField } from "./FieldCheck";
 import { ScoreRing, VerdictPill } from "./NextCrop";
 
 export type MapTarget = "check" | "plan";
+type Layer = "score" | "rain" | "recent";
+
+type GeoFeature = { geometry: { type: string; coordinates: number[][][] | number[][][][] } };
+
+/** Draw a GPM grid as a smooth greyscale picture, clipped to Sarawak. Darker = more rain. */
+function rainImage(rain: MapRain, layer: "rain" | "recent", fg: string, features: GeoFeature[]) {
+  const g = rain.grid;
+  const values = layer === "rain" ? rain.season.total_mm : rain.recent?.ratio ?? [];
+  const lo = layer === "rain" ? rain.season.min ?? 0 : 0.3;
+  const hi = layer === "rain" ? rain.season.max ?? 1 : 1.7;
+  const small = document.createElement("canvas");
+  small.width = g.nlon;
+  small.height = g.nlat;
+  const sc = small.getContext("2d")!;
+  const img = sc.createImageData(g.nlon, g.nlat);
+  const [r, gg, b] = (fg.match(/[0-9a-f]{2}/gi) ?? ["0a", "0a", "0a"]).map((h) => parseInt(h, 16));
+  for (let j = 0; j < g.nlat; j++) {
+    for (let i = 0; i < g.nlon; i++) {
+      const v = values[j]?.[i];
+      const k = ((g.nlat - 1 - j) * g.nlon + i) * 4;
+      if (v == null) continue;
+      const t = Math.max(0, Math.min(1, (v - lo) / (hi - lo || 1)));
+      img.data[k] = r;
+      img.data[k + 1] = gg;
+      img.data[k + 2] = b;
+      img.data[k + 3] = Math.round(30 + t * 200);
+    }
+  }
+  sc.putImageData(img, 0, 0);
+  const scale = 10;
+  const big = document.createElement("canvas");
+  big.width = g.nlon * scale;
+  big.height = g.nlat * scale;
+  const bc = big.getContext("2d")!;
+  const west = g.lon0 - g.step / 2, north = g.lat0 - g.step / 2 + g.nlat * g.step;
+  const px = (lon: number) => ((lon - west) / (g.nlon * g.step)) * big.width;
+  const py = (lat: number) => ((north - lat) / (g.nlat * g.step)) * big.height;
+  bc.beginPath();
+  for (const f of features) {
+    const polys = (f.geometry.type === "Polygon" ? [f.geometry.coordinates] : f.geometry.coordinates) as number[][][][];
+    for (const poly of polys) {
+      for (const ring of poly) {
+        ring.forEach(([lon, lat], n) => (n === 0 ? bc.moveTo(px(lon), py(lat)) : bc.lineTo(px(lon), py(lat))));
+        bc.closePath();
+      }
+    }
+  }
+  bc.clip("evenodd");
+  bc.imageSmoothingEnabled = true;
+  bc.drawImage(small, 0, 0, big.width, big.height);
+  const south = g.lat0 - g.step / 2, east = west + g.nlon * g.step;
+  return { url: big.toDataURL("image/png"), bounds: [[south, west], [north, east]] as [[number, number], [number, number]] };
+}
 
 const CARTO_KEY = process.env.NEXT_PUBLIC_CARTO_KEY || "";
 const SARAWAK: [[number, number], [number, number]] = [[0.85, 109.55], [5.05, 115.7]];
@@ -64,6 +117,8 @@ export function SarawakMap({
   const shapes = useRef<Leaflet.GeoJSON | null>(null);
   const pins = useRef<Map<string, Leaflet.Marker>>(new Map());
   const pointPin = useRef<Leaflet.CircleMarker | null>(null);
+  const rainLayer = useRef<Leaflet.ImageOverlay | null>(null);
+  const features = useRef<GeoFeature[]>([]);
 
   const [ready, setReady] = useState(false);
   const [crop, setCrop] = useState("JAGUNG");
@@ -73,6 +128,9 @@ export function SarawakMap({
   const [data, setData] = useState<MapSuitability | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [layer, setLayer] = useState<Layer>("score");
+  const [rain, setRain] = useState<MapRain | null>(null);
+  const [rainError, setRainError] = useState<string | null>(null);
 
   // Create the map once (Leaflet needs the browser, so it is loaded here).
   useEffect(() => {
@@ -120,6 +178,7 @@ export function SarawakMap({
       const res = await fetch("/data/sarawak-divisions.geojson");
       const geo = await res.json();
       if (cancelled) return;
+      features.current = geo.features;
       shapes.current = lib
         .geoJSON(geo, {
           // Outlines only: taps go through to the map so any exact spot can be chosen.
@@ -175,6 +234,39 @@ export function SarawakMap({
     };
   }, [crop, planted, point]);
 
+  // GPM rainfall grid for the shading layers.
+  useEffect(() => {
+    if (layer === "score" || !planted) return;
+    const ctrl = new AbortController();
+    const t = setTimeout(async () => {
+      try {
+        setRain(await getMapRain({ crop, planted }, ctrl.signal));
+        setRainError(null);
+      } catch (e) {
+        if (ctrl.signal.aborted) return;
+        setRainError(e instanceof ApiError ? e.message : "Rainfall shading could not be loaded.");
+      }
+    }, 300);
+    return () => {
+      clearTimeout(t);
+      ctrl.abort();
+    };
+  }, [layer, crop, planted]);
+
+  // Draw or remove the rainfall shading.
+  useEffect(() => {
+    const lib = L.current;
+    const m = map.current;
+    if (!ready || !lib || !m) return;
+    rainLayer.current?.remove();
+    rainLayer.current = null;
+    if (layer === "score" || !rain) return;
+    if (layer === "recent" && !rain.recent) return;
+    const fg = getComputedStyle(document.documentElement).getPropertyValue("--fg").trim() || "#0a0a0a";
+    const pic = rainImage(rain, layer, fg, features.current);
+    rainLayer.current = lib.imageOverlay(pic.url, pic.bounds, { opacity: 0.85, interactive: false }).addTo(m);
+  }, [ready, layer, rain]);
+
   // Paint scores and the selection onto the map.
   useEffect(() => {
     const lib = L.current;
@@ -184,7 +276,8 @@ export function SarawakMap({
     shapes.current?.setStyle((f) => {
       const s = scores.get(f?.properties.code);
       const sel = f?.properties.code === selected;
-      return { color: fg, weight: sel ? 3 : 1.2, opacity: sel ? 1 : 0.7, fillColor: fg, fillOpacity: s == null ? 0 : (s / 100) * 0.28 };
+      const fill = layer !== "score" || s == null ? 0 : (s / 100) * 0.28;
+      return { color: fg, weight: sel ? 3 : 1.2, opacity: sel ? 1 : 0.7, fillColor: fg, fillOpacity: fill };
     });
     locations.forEach((d) => {
       const pin = pins.current.get(d.code);
@@ -201,7 +294,7 @@ export function SarawakMap({
         .circleMarker([Number(point.lat), Number(point.lon)], { radius: 9, color: fg, weight: 3, fillColor: fg, fillOpacity: selected === "POINT" ? 1 : 0.4 })
         .addTo(m);
     }
-  }, [ready, data, selected, point, locations]);
+  }, [ready, data, selected, point, locations, layer]);
 
   const info: (Place & MapScore) | null =
     selected === "POINT" ? data?.point ?? null : data?.divisions.find((d) => d.code === selected) ?? null;
@@ -260,6 +353,40 @@ export function SarawakMap({
           </FieldShell>
         </div>
 
+        <div className="mb-4 grid gap-1.5">
+          <span className="text-[0.92rem] font-semibold" id="map-layer-label">Shading</span>
+          <div role="radiogroup" aria-labelledby="map-layer-label" className="grid max-w-[620px] grid-cols-3 rounded-[10px] border border-line bg-bg p-1">
+            {([
+              ["score", "Climate score"],
+              ["rain", "Expected rain"],
+              ["recent", "Last 60 days"],
+            ] as const).map(([value, label]) => (
+              <button
+                key={value}
+                type="button"
+                role="radio"
+                aria-checked={layer === value}
+                onClick={() => setLayer(value)}
+                className={`min-h-10 rounded-[7px] px-2 text-[0.88rem] font-semibold ${layer === value ? "bg-fg text-bg" : "text-muted hover:text-fg"}`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          <span className="text-[0.8rem] text-muted">
+            {layer === "score"
+              ? "Darker divisions have a higher climate score for this crop and date."
+              : layer === "rain"
+                ? rain
+                  ? `NASA GPM: normal rain over the ${rain.crop.name.toLowerCase()} season (${rain.season.months}, ${rain.season.days} days) from ${rain.normals_period}, about 10 km detail. Lighter ≈ ${num(rain.season.min ?? 0)} mm, darker ≈ ${num(rain.season.max ?? 0)} mm.`
+                  : "Loading NASA GPM rainfall…"
+                : rain?.recent
+                  ? `NASA GPM: rain from ${rain.recent.start} to ${rain.recent.end} compared with normal. Lighter = drier than normal, darker = wetter.`
+                  : "Loading NASA GPM rainfall…"}
+            {rainError && layer !== "score" ? ` ${rainError}` : ""}
+          </span>
+        </div>
+
         <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
           <div className="bumi-map relative isolate min-w-0 overflow-hidden rounded-[14px] border border-line">
             <div ref={box} className="h-[58vh] max-h-[640px] min-h-[380px] w-full" role="application" aria-label="Map of Sarawak divisions" />
@@ -290,7 +417,7 @@ export function SarawakMap({
                   </div>
                 </div>
                 <p className="rounded-[10px] border border-line bg-bg px-3 py-2 text-[0.82rem] leading-snug text-muted">
-                  <span className="font-semibold text-fg">NASA POWER</span> · {data?.crop.name} · {info.season.months} ({info.season.days} days
+                  <span className="font-semibold text-fg">{data?.source ?? "NASA"}</span> · {data?.crop.name} · {info.season.months} ({info.season.days} days
                   {info.season.days_assumed ? ", assumed" : ""}): {num(info.season.temp_c)}°C average, {num(info.season.rain_mm)} mm rain
                 </p>
                 <ul className="grid list-disc gap-1 pl-5 text-[0.88rem] text-muted">
@@ -333,8 +460,8 @@ export function SarawakMap({
               </div>
             )}
             <p className="text-[0.78rem] text-muted">
-              Climate score only (temperature 50 + water 50), from NASA POWER 25-year averages at each division&apos;s main town.
-              Shading is darker where the score is higher. Your soil pH and rotation are scored in Next crop.
+              Climate score only (temperature 50 + water 50) at each division&apos;s main town: temperature from NASA POWER,
+              rainfall from NASA GPM (about 10 km). Your soil pH, rotation and recent rain are scored in Next crop.
             </p>
           </div>
         </div>
