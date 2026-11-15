@@ -8,6 +8,7 @@ import { locateMe, niceDate } from "@/lib/geo";
 import type { Crop, MapPlace, Place, PlanInput, PlanOption, PlanResponse } from "@/lib/types";
 import { Container, Eyebrow, Panel, SectionTitle } from "./Container";
 import { FieldShell, NumberField, SelectField } from "./FieldCheck";
+import { TabSection } from "./TabSection";
 
 const STORAGE_KEY = "bumi360-plan-v1";
 
@@ -169,7 +170,6 @@ export function NextCrop({
     const t = setTimeout(() => {
       setGps({ state: "idle" });
       setForm((f) => ({ ...f, location: mapPlace.location, lat: mapPlace.lat, lon: mapPlace.lon }));
-      document.getElementById("plan")?.scrollIntoView({ behavior: "smooth", block: "start" });
     }, 80);
     return () => clearTimeout(t);
   }, [mapPlace]);
@@ -232,7 +232,7 @@ export function NextCrop({
   const placeName = data?.location.name ?? "";
 
   return (
-    <section id="plan" aria-labelledby="plan-title" className="border-t border-line py-14 md:py-[72px]">
+    <TabSection id="plan">
       <Container>
         <div className="mb-7">
           <Eyebrow>Next crop</Eyebrow>
@@ -401,6 +401,6 @@ export function NextCrop({
           </div>
         </div>
       </Container>
-    </section>
+    </TabSection>
   );
 }

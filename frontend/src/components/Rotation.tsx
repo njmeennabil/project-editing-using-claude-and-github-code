@@ -1,10 +1,11 @@
 import { num } from "@/lib/format";
 import type { RotationItem } from "@/lib/types";
 import { Container, Eyebrow, SectionTitle } from "./Container";
+import { TabSection } from "./TabSection";
 
 export function Rotation({ rotation, notes }: { rotation: RotationItem[]; notes: string[] }) {
   return (
-    <section id="rotation" aria-labelledby="rotation-title" className="border-y border-line bg-bg-alt py-14 md:py-[72px]">
+    <TabSection id="rotation">
       <Container>
         <div className="mb-7">
           <Eyebrow>Crop rotation</Eyebrow>
@@ -34,6 +35,6 @@ export function Rotation({ rotation, notes }: { rotation: RotationItem[]; notes:
           ))}
         </ul>
       </Container>
-    </section>
+    </TabSection>
   );
 }

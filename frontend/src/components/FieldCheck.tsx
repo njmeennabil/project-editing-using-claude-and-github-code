@@ -9,6 +9,7 @@ import type { CheckResponse, ClimateMode, Crop, FieldInput, MapPlace, Place } fr
 import { Container, Eyebrow, Panel, SectionTitle } from "./Container";
 import { ResultCard } from "./ResultCard";
 import { StatusPill } from "./Status";
+import { TabSection } from "./TabSection";
 
 const STORAGE_KEY = "bumi360-field-v2";
 const LABEL = { ok: "suitable", warn: "suitable with management", bad: "less suitable" } as const;
@@ -67,7 +68,6 @@ export function FieldCheck({
     const t = setTimeout(() => {
       setGps({ state: "idle" });
       setForm((f) => ({ ...f, mode: "nasa", location: mapPlace.location, lat: mapPlace.lat, lon: mapPlace.lon }));
-      document.getElementById("check")?.scrollIntoView({ behavior: "smooth", block: "start" });
     }, 80);
     return () => clearTimeout(t);
   }, [mapPlace]);
@@ -174,7 +174,7 @@ export function FieldCheck({
   const locationValue = gps.state === "locating" ? "GPS" : form.location;
 
   return (
-    <section id="check" aria-labelledby="check-title" className="py-14 md:py-[72px]">
+    <TabSection id="check">
       <Container>
         <div className="mb-7">
           <Eyebrow>Field check</Eyebrow>
@@ -344,7 +344,7 @@ export function FieldCheck({
           </div>
         </div>
       </Container>
-    </section>
+    </TabSection>
   );
 }
 

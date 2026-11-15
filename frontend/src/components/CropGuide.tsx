@@ -4,6 +4,7 @@ import { useRef } from "react";
 import { maturity, num, phRange, range, waterText } from "@/lib/format";
 import type { Crop, RotationItem } from "@/lib/types";
 import { Container, Eyebrow, SectionTitle } from "./Container";
+import { TabSection } from "./TabSection";
 
 export function CropGuide({
   crops,
@@ -42,7 +43,7 @@ export function CropGuide({
   }
 
   return (
-    <section id="crops" aria-labelledby="crops-title" className="border-y border-line bg-bg-alt py-14 md:py-[72px]">
+    <TabSection id="crops">
       <Container>
         <div className="mb-7">
           <Eyebrow>Crop guide</Eyebrow>
@@ -83,7 +84,7 @@ export function CropGuide({
           <GuideBody crop={crop} rotation={rotation} />
         </article>
       </Container>
-    </section>
+    </TabSection>
   );
 }
 
