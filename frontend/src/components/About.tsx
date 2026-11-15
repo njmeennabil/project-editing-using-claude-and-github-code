@@ -55,6 +55,12 @@ export function About() {
             Sciences Data and Information Services Center (GES DISC); temperature data from the NASA Langley Research Center
             (LaRC) POWER Project, funded through the NASA Earth Science/Applied Science Program.
           </AboutCard>
+          <AboutCard title="Soil moisture">
+            This week&apos;s soil moisture comes from NASA SMAP Level 4 (about 9 km): satellite measurements combined with a land
+            model, so forest areas have values too. BUMI360 compares the root zone (top 1 m) with what is usual for the month
+            (2016–2025). It runs about 4–5 days behind. Data provided by the NASA National Snow and Ice Data Center
+            Distributed Active Archive Center (NSIDC DAAC).
+          </AboutCard>
           <AboutCard title="Explore the data in NASA Giovanni">
             Open{" "}
             <a href="https://giovanni.gsfc.nasa.gov/giovanni/" target="_blank" rel="noopener" className="font-semibold text-fg underline">
@@ -65,7 +71,8 @@ export function About() {
           </AboutCard>
           <AboutCard title="Next-crop score">
             Each crop gets up to 40 points for climate (temperature and rainfall over its own season after your harvest), 30
-            for rotation after your current crop, 15 for soil pH and 15 for recent rain (the last 60 days against normal).
+            for rotation after your current crop, 15 for soil pH and 15 for current conditions (the last 60 days of rain and this week&apos;s soil moisture, each
+            against what is usual).
             Most rotation ratings are drafts from general agronomy and are awaiting expert review.
           </AboutCard>
           <AboutCard title="Crop data">
@@ -77,7 +84,7 @@ export function About() {
             (citypopulation.de, CC BY 3.0), with Sarawak&apos;s districts merged into its 12 divisions by BUMI360.
           </AboutCard>
           <AboutCard title="Coming next">
-            Current soil moisture from NASA SMAP, and seasonal forecasts.
+            Seasonal rainfall forecasts, and confirmed rotation ratings from agricultural experts.
           </AboutCard>
           <AboutCard title="Please note" strong>
             BUMI360 gives general guidance. Confirm planting decisions with a soil test and your local agriculture officer.
