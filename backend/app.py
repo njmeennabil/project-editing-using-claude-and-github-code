@@ -7,6 +7,7 @@ Endpoints
     GET  /api/rotation               Crop rotation pairs and notes
     POST /api/rotation/plan  {"current": "JAGUNG", "planted": "2026-03-02", "location": "KUCHING", "ph": 6.2}
          scores the 5 crops 0–100 for the next season and returns the top 3
+    GET  /api/map/rain?crop=JAGUNG&planted=2026-03-02   GPM rainfall grid (season total, last 60 days vs normal)
     GET  /api/map/suitability?crop=JAGUNG&planted=2026-03-02[&lat=&lon=][&irrigation=]
          climate suitability (0–100) of one crop in all 12 Sarawak divisions, plus an optional map point
     GET  /api/locations              Sarawak divisions with NASA climate data
@@ -20,9 +21,10 @@ Run locally:
     pip install -r requirements-dev.txt
     flask --app app run --port 5000
 """
+import math
 import os
 import sys
-from datetime import date
+from datetime import date, timedelta
 from functools import lru_cache
 from pathlib import Path
 
@@ -35,6 +37,7 @@ sys.path.insert(0, str(REPO / "database"))
 
 from crop_data import DEFAULT_DB, load_data  # noqa: E402
 
+import gpm  # noqa: E402
 import nasa_power  # noqa: E402
 import planner  # noqa: E402
 import rules  # noqa: E402
@@ -51,6 +54,8 @@ NAMES = {
     "prep_days": "Days between harvest and next planting",
 }
 POWER_SOURCE = "NASA POWER"
+GPM_ACK = ("GPM IMERG data provided by NASA Goddard Earth Sciences Data and Information Services Center (GES DISC); "
+           "temperature from the NASA Langley Research Center (LaRC) POWER Project.")
 
 
 class BadInput(Exception):
@@ -104,7 +109,7 @@ def resolve_climate(src):
                 data = nasa_power.climate_for_point(div["lat"], div["lon"])
             except nasa_power.ClimateUnavailable as e:
                 raise Upstream(str(e))
-        return {"code": code, "name": div["name"], "lat": div["lat"], "lon": div["lon"]}, data
+        return {"code": code, "name": div["name"], "lat": div["lat"], "lon": div["lon"]}, gpm.merge(data, div["lat"], div["lon"])
     if lat is not None or lon is not None:
         if lat is None or lon is None:
             raise BadInput("Give both 'lat' and 'lon'.")
@@ -113,7 +118,7 @@ def resolve_climate(src):
         except nasa_power.ClimateUnavailable as e:
             raise Upstream(str(e))
         label = "Map point" if str(src.get("point") or "").lower() == "map" else "Your location"
-        return {"code": "GPS", "name": f"{label} ({lat:.2f}, {lon:.2f})", "lat": lat, "lon": lon}, data
+        return {"code": "GPS", "name": f"{label} ({lat:.2f}, {lon:.2f})", "lat": lat, "lon": lon}, gpm.merge(data, lat, lon)
     return None, None
 
 
@@ -168,6 +173,7 @@ def create_app():
             locations=SARAWAK_DIVISIONS,
             source=POWER_SOURCE,
             acknowledgement=nasa_power._saved.get("acknowledgement"),
+            gpm=gpm.describe(),
         )
 
     @app.get("/api/climate")
@@ -200,6 +206,7 @@ def create_app():
             clim = nasa_power.climate_for_location(d["code"])
             if clim is None:
                 continue
+            clim = gpm.merge(clim, d["lat"], d["lon"])
             divisions.append({**d, **planner.climate_score(crop, clim, planted, irrigation)})
 
         point = None
@@ -213,9 +220,53 @@ def create_app():
             crop={"code": crop["code"], "name": crop["name"], "local_name": crop["local_name"]},
             planted=planted.isoformat(),
             irrigation=irrigation,
-            source=POWER_SOURCE,
+            source="NASA GPM + POWER" if gpm.data() else POWER_SOURCE,
             divisions=divisions,
             point=point,
+        )
+
+    @app.get("/api/map/rain")
+    def map_rain():
+        """GPM rainfall grid for the map: expected rain over a crop's season, and the last 60 days vs normal."""
+        d = gpm.data()
+        if not d:
+            return jsonify(available=False, error="GPM rainfall data is not available yet."), 404
+        by_code = {c["code"]: c for c in get_data()["crops"]}
+        code = str(request.args.get("crop") or "").strip().upper()
+        if code not in by_code:
+            raise BadInput("Choose a crop: " + ", ".join(by_code) + ".")
+        planted = parse_date(request.args.get("planted"))
+        days, _ = nasa_power.crop_season_days(by_code[code])
+        per_month = [0] * 12
+        for k in range(days):
+            per_month[(planted + timedelta(days=k)).month - 1] += 1
+        g = d["grid"]
+        normals = d["normals"]["mm_per_day"]
+
+        def clean(v):
+            return None if v is None or (isinstance(v, float) and math.isnan(v)) else v
+
+        season = [[clean(round(sum(per_month[m] * normals[m][j][i] for m in range(12) if per_month[m]))
+                         if all(clean(normals[m][j][i]) is not None for m in range(12) if per_month[m]) else None)
+                   for i in range(g["nlon"])] for j in range(g["nlat"])]
+        r = d.get("recent")
+        ratio = None
+        if r:
+            ratio = [[clean(round(r["total_mm"][j][i] / r["normal_mm"][j][i], 2))
+                      if clean(r["total_mm"][j][i]) is not None and clean(r["normal_mm"][j][i]) else None
+                      for i in range(g["nlon"])] for j in range(g["nlat"])]
+        flat = [v for row in season for v in row if v is not None]
+        sea = nasa_power.season_from_date({"rain_mm_day": [0] * 12, "temp_c": [0] * 12}, planted, days)
+        return jsonify(
+            available=True,
+            grid=g,
+            crop={"code": code, "name": by_code[code]["name"]},
+            season={"planted": planted.isoformat(), "days": days, "months": sea["months"], "total_mm": season,
+                    "min": min(flat) if flat else None, "max": max(flat) if flat else None},
+            recent=None if not r else {"start": r["start"], "end": r["end"], "days": r["days"], "ratio": ratio},
+            normals_period=d["normals"]["period"],
+            source="NASA GPM IMERG V07",
+            acknowledgement=GPM_ACK,
         )
 
     @app.route("/api/rotation/plan", methods=["GET", "POST"])
@@ -237,11 +288,12 @@ def create_app():
         if clim is None:
             raise BadInput("Choose a location in Sarawak, or use your GPS location.")
 
-        result = planner.plan(data, current, planted, clim, place, ph, irrigation, prep_days)
+        recent = gpm.recent_at(place["lat"], place["lon"])
+        result = planner.plan(data, current, planted, clim, place, ph, irrigation, prep_days, recent)
         return jsonify(
             input={"current": current, "planted": planted.isoformat(), "ph": ph, "irrigation": irrigation,
                    "prep_days": prep_days},
-            climate={"source": POWER_SOURCE, "period": clim.get("period")},
+            climate={"source": gpm.source_label(clim), "period": gpm.period_label(clim)},
             **result,
         )
 
@@ -282,7 +334,7 @@ def create_app():
             sea = nasa_power.season(clim, month, days)
             water_total = sea["rain_mm"] + irrigation
             return sea["temp_c"], water_total, {
-                "source": POWER_SOURCE,
+                "source": gpm.source_label(clim),
                 "location": place["name"],
                 "months": sea["months"],
                 "days": days,
@@ -296,7 +348,7 @@ def create_app():
         results, counts = rules.assess_all(selected, ph, per_crop=per_crop)
         return jsonify(
             input={"ph": ph, "temp": None, "water": None, "crop": crop_code,
-                   "climate": {"source": POWER_SOURCE, "period": clim.get("period"), "location": place,
+                   "climate": {"source": gpm.source_label(clim), "period": gpm.period_label(clim), "location": place,
                                "month": month, "month_name": nasa_power.MONTH_NAMES[month - 1],
                                "irrigation": irrigation}},
             counts=counts,

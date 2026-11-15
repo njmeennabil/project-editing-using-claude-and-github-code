@@ -71,11 +71,11 @@ def test_irrigation_and_ph_change_the_score(client):
 def test_points_rules():
     crop = {"temp_min_c": 26, "temp_max_c": 30, "water_min_mm": 500, "water_max_mm": 1000,
             "soil": {"ph_min": 6.0, "ph_max": 7.5, "ph_danger_below": 4.5}}
-    assert planner.temp_points(crop, 28)[0] == 22.5
-    assert planner.temp_points(crop, 25)[0] == 18.0        # 1 °C below
-    assert planner.water_points(crop, 250)[0] == 11.25     # half the minimum
-    assert planner.water_points(crop, 3000)[0] == 22.5 * 0.4
-    assert planner.soil_points(crop, 5.5)[0] == 15.0
+    assert planner.temp_points(crop, 28)[0] == 20.0
+    assert planner.temp_points(crop, 25)[0] == 16.0        # 1 °C below
+    assert planner.water_points(crop, 250)[0] == 10.0      # half the minimum
+    assert planner.water_points(crop, 3000)[0] == 20.0 * 0.4
+    assert planner.soil_points(crop, 5.5)[0] == 11.25
     assert planner.soil_points(crop, 4.0)[0] == 0.0
     assert planner.verdict(90) == "Highly recommended"
     assert planner.verdict(90, "lemah") == "Possible with care"
