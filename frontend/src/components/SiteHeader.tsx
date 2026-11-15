@@ -1,83 +1,127 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { TABS } from "@/lib/tabs";
+import { useTab } from "@/lib/use-tab";
 import { BrandMark, Wordmark } from "./BrandMark";
-import { NAV_LINKS } from "./nav";
-
+import { TabIcon } from "./TabIcon";
 
 export function SiteHeader() {
+  const tab = useTab();
   const [open, setOpen] = useState(false);
-  // Over the dark hero: see-through at the very top, dark glass once scrolled. Past it: the normal bar.
-  const [overHero, setOverHero] = useState(true);
   const [atTop, setAtTop] = useState(true);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
-    const hero = document.getElementById("hero");
-    if (!hero) return;
-    const check = () => {
-      setOverHero(hero.getBoundingClientRect().bottom > 65);
-      setAtTop(window.scrollY < 8);
-    };
+    const check = () => setAtTop(window.scrollY < 8);
     check();
     window.addEventListener("scroll", check, { passive: true });
-    window.addEventListener("resize", check);
-    return () => {
-      window.removeEventListener("scroll", check);
-      window.removeEventListener("resize", check);
-    };
+    return () => window.removeEventListener("scroll", check);
   }, []);
 
-  const clear = overHero && !open;
+  // Close the menu with Escape or a tap outside it.
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setOpen(false);
+        buttonRef.current?.focus();
+      }
+    };
+    const onDown = (e: PointerEvent) => {
+      const t = e.target as Node;
+      if (!menuRef.current?.contains(t) && !buttonRef.current?.contains(t)) setOpen(false);
+    };
+    document.addEventListener("keydown", onKey);
+    document.addEventListener("pointerdown", onDown);
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.removeEventListener("pointerdown", onDown);
+    };
+  }, [open]);
+
+  // See-through only at the very top of the home page, over the hero.
+  const clear = tab === "home" && atTop && !open;
+  const current = TABS.find((t) => t.id === tab);
 
   return (
     <header
-      className={`sticky top-0 z-50 border-b transition-colors duration-300 ${
-        !clear
-          ? "border-line bg-surface/90 text-fg backdrop-blur-md"
-          : atTop
-            ? "border-transparent bg-transparent text-white"
-            : "border-white/10 bg-[rgba(5,8,18,.72)] text-white backdrop-blur-md"
+      className={`sticky top-0 z-50 border-b text-white transition-colors duration-300 ${
+        clear ? "border-transparent bg-transparent" : "border-white/10 bg-[rgba(6,10,24,.78)] backdrop-blur-md"
       }`}
     >
       <div className="relative mx-auto flex h-16 max-w-[1180px] items-center justify-between gap-4 px-4 md:px-8">
         <a href="#top" className="flex items-center gap-2.5 font-display text-xl font-bold tracking-tight" aria-label="BUMI360 home">
           <BrandMark className="h-[30px] w-[30px]" />
-          <Wordmark light={clear} />
+          <Wordmark light />
         </a>
 
-        <button
-          type="button"
-          className={`grid h-11 w-11 place-items-center rounded-[10px] border lg:hidden ${
-            clear ? "border-white/30 bg-white/10" : "border-line bg-surface"
-          }`}
-          aria-expanded={open}
-          aria-controls="site-nav"
-          onClick={() => setOpen((o) => !o)}
-        >
-          <span className="sr-only">Menu</span>
-          <svg viewBox="0 0 24 24" className="h-5 w-5" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-            {open ? <path d="M6 6l12 12M18 6L6 18" /> : <path d="M4 7h16M4 12h16M4 17h16" />}
-          </svg>
-        </button>
+        <div className="flex items-center gap-3">
+          {current && (
+            <span className="hidden items-center gap-2 rounded-full border border-white/15 bg-white/5 px-3 py-1.5 text-sm font-medium text-white/85 sm:inline-flex">
+              <TabIcon id={current.id} className="h-4 w-4" />
+              {current.label}
+            </span>
+          )}
+          <button
+            ref={buttonRef}
+            type="button"
+            className={`grid h-11 w-11 place-items-center rounded-full border transition-colors ${
+              open ? "border-white/50 bg-white/15" : "border-white/25 bg-white/5 hover:bg-white/10"
+            }`}
+            aria-expanded={open}
+            aria-controls="site-menu"
+            onClick={() => setOpen((o) => !o)}
+          >
+            <span className="sr-only">Menu</span>
+            {open ? (
+              <svg viewBox="0 0 24 24" className="h-5 w-5" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                <path d="M6 6l12 12M18 6L6 18" />
+              </svg>
+            ) : (
+              <svg viewBox="0 0 24 24" className="h-5 w-5" aria-hidden="true" fill="currentColor">
+                <circle cx="12" cy="5" r="2" />
+                <circle cx="12" cy="12" r="2" />
+                <circle cx="12" cy="19" r="2" />
+              </svg>
+            )}
+          </button>
+        </div>
 
-        <nav
-          id="site-nav"
-          aria-label="Main"
-          className={`${open ? "flex" : "hidden"} absolute inset-x-0 top-full flex-col gap-0.5 border-b border-line bg-surface px-4 pb-3.5 pt-2 shadow-md lg:static lg:flex lg:flex-row lg:gap-1 lg:border-0 lg:bg-transparent lg:p-0 lg:shadow-none`}
-        >
-          {NAV_LINKS.map((l) => (
-            <a
-              key={l.href}
-              href={l.href}
-              onClick={() => setOpen(false)}
-              className={`whitespace-nowrap rounded-lg px-3 py-3 text-base font-medium text-muted hover:bg-bg-alt hover:text-fg lg:py-2 lg:text-[0.95rem] ${
-                clear ? "lg:text-white/85 lg:hover:bg-white/10 lg:hover:text-white" : ""
-              }`}
-            >
-              {l.label}
-            </a>
-          ))}
-        </nav>
+        {open && (
+          <div
+            ref={menuRef}
+            id="site-menu"
+            className="menu-pop absolute right-4 top-[calc(100%+8px)] w-[min(320px,calc(100vw-32px))] overflow-hidden rounded-[16px] border border-white/15 bg-[rgba(10,16,36,.94)] p-2 shadow-[0_20px_60px_rgba(0,0,0,.55)] backdrop-blur-xl md:right-8"
+          >
+            <nav aria-label="Main">
+              <a
+                href="#top"
+                onClick={() => setOpen(false)}
+                aria-current={tab === "home" ? "page" : undefined}
+                className={`menu-item ${tab === "home" ? "is-on" : ""}`}
+              >
+                <TabIcon id="home" className="h-[18px] w-[18px]" />
+                <span>Home</span>
+              </a>
+              <div className="mx-3 my-1.5 h-px bg-white/10" />
+              {TABS.map((t, i) => (
+                <a
+                  key={t.id}
+                  href={`#${t.id}`}
+                  onClick={() => setOpen(false)}
+                  aria-current={tab === t.id ? "page" : undefined}
+                  className={`menu-item ${tab === t.id ? "is-on" : ""}`}
+                >
+                  <TabIcon id={t.id} className="h-[18px] w-[18px]" />
+                  <span>{t.label}</span>
+                  <span className="ml-auto font-mono text-[0.72rem] text-white/35">0{i + 1}</span>
+                </a>
+              ))}
+            </nav>
+          </div>
+        )}
       </div>
     </header>
   );

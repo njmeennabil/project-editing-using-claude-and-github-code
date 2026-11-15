@@ -3,6 +3,7 @@ import { BumiApp } from "@/components/BumiApp";
 import { Hero } from "@/components/Hero";
 import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
+import { TabSync } from "@/components/TabSync";
 import { getInitialData } from "@/lib/initial-data";
 
 export default async function Home() {
@@ -15,10 +16,11 @@ export default async function Home() {
     <div id="top">
       <a
         href="#check"
-        className="absolute -top-16 left-4 z-[100] rounded-lg bg-fg px-3.5 py-2 text-bg focus:top-2"
+        className="fixed -top-16 left-4 z-[100] rounded-lg bg-fg px-3.5 py-2 text-bg focus:top-2"
       >
         Skip to the field check
       </a>
+      <TabSync />
       <SiteHeader />
       <main>
         <Hero cropCount={initial?.crops.length ?? 5} />

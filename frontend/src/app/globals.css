@@ -1,26 +1,15 @@
 @import "tailwindcss";
 
-/* BUMI360 — black and white. Colour tokens switch with the viewer's light/dark setting. */
+/* BUMI360 — night sky. One dark theme everywhere, to match the space hero. */
 :root {
-  --bg: #ffffff;
-  --bg-alt: #f3f3f3;
-  --surface: #ffffff;
-  --fg: #0a0a0a;
-  --muted: #5c5c5c;
-  --line: #d6d6d6;
-  --band: #cfcfcf;
-  --track: #eeeeee;
-}
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --bg: #000000; --bg-alt: #0e0e0e; --surface: #121212; --fg: #f5f5f5;
-    --muted: #a3a3a3; --line: #2e2e2e; --band: #4a4a4a; --track: #262626;
-    color-scheme: dark;
-  }
-}
-:root[data-theme="dark"] {
-  --bg: #000000; --bg-alt: #0e0e0e; --surface: #121212; --fg: #f5f5f5;
-  --muted: #a3a3a3; --line: #2e2e2e; --band: #4a4a4a; --track: #262626;
+  --bg: #060a18;
+  --bg-alt: #0a1126;
+  --surface: #0d1530;
+  --fg: #eef2fb;
+  --muted: #9aa7c7;
+  --line: #26325a;
+  --band: #3d4c78;
+  --track: #18223f;
   color-scheme: dark;
 }
 
@@ -59,11 +48,8 @@ h1, h2, h3, h4 { text-wrap: balance; }
 .bumi-map .leaflet-bar { border: 1px solid var(--line); box-shadow: none; }
 .bumi-map .leaflet-bar a { background: var(--surface); color: var(--fg); border-bottom-color: var(--line); }
 .bumi-map .leaflet-bar a:hover { background: var(--bg-alt); }
-.bw-tiles { filter: grayscale(1) contrast(1.05); }
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) .bw-tiles { filter: grayscale(1) invert(1) brightness(0.85) contrast(0.95); }
-}
-:root[data-theme="dark"] .bw-tiles { filter: grayscale(1) invert(1) brightness(0.85) contrast(0.95); }
+/* Greyscale map tiles turned dark and tinted towards the site's navy. */
+.bw-tiles { filter: grayscale(1) invert(1) brightness(0.78) contrast(0.95) sepia(0.3) hue-rotate(185deg); }
 
 .bumi-pin-wrap { background: none; border: 0; }
 .bumi-pin {
@@ -71,7 +57,7 @@ h1, h2, h3, h4 { text-wrap: balance; }
   display: flex; align-items: center; gap: 6px; white-space: nowrap;
   padding: 3px 9px 3px 4px; border-radius: 999px; border: 2px solid var(--fg);
   background: var(--surface); color: var(--fg); font: 600 12px/1 var(--font-sans);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, .25); cursor: pointer;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, .5); cursor: pointer;
 }
 .bumi-pin b {
   display: inline-grid; place-items: center; min-width: 26px; height: 22px; padding: 0 4px;
@@ -92,4 +78,62 @@ h1, h2, h3, h4 { text-wrap: balance; }
 .hero-scene.is-on { opacity: 1; transform: scale(1); }
 @media (prefers-reduced-motion: reduce) {
   .hero-scene { transform: none; transition: opacity .3s linear; }
+}
+
+/* ---------- Tabs: one section at a time ---------- */
+.tab-panel { display: none; min-height: calc(100svh - 65px); }
+html[data-tab="check"] #check, html[data-tab="plan"] #plan, html[data-tab="map"] #map,
+html[data-tab="crops"] #crops, html[data-tab="compare"] #compare, html[data-tab="rotation"] #rotation,
+html[data-tab="about"] #about { display: block; }
+html[data-tab]:not([data-tab="home"]) #hero { display: none; }
+
+/* ---------- Night sky behind each tab ---------- */
+.sky { position: absolute; inset: 0; z-index: -1; pointer-events: none; }
+.sky > * { position: absolute; left: 0; width: 100%; }
+.sky-stars { inset: 0; height: 100%; background: url(/sky/stars.svg) 0 0 / 600px 600px repeat; opacity: .9; }
+.sky-top { top: 0; height: 900px; background-position: center top; background-size: cover; background-repeat: no-repeat; }
+.sky-bottom { bottom: 0; height: 900px; background-position: center bottom; background-size: cover; background-repeat: no-repeat; }
+.sky-full { top: 0; height: 100%; background-size: 100% 100%; background-repeat: no-repeat; }
+.sky-panels .rounded-\[14px\].border { box-shadow: 0 10px 40px rgba(0, 0, 0, .25); }
+@media (max-width: 767px) {
+  .sky-top, .sky-bottom { height: 560px; opacity: .7; }
+}
+
+/* Twinkle: a second layer of stars that fades in and out. */
+.sky-stars::after {
+  content: ""; position: absolute; inset: 0;
+  background: url(/sky/stars.svg) 300px 170px / 420px 420px repeat;
+  animation: twinkle 5s ease-in-out infinite alternate;
+}
+@keyframes twinkle { from { opacity: .15; } to { opacity: .9; } }
+
+/* Cards: frosted navy glass with a light top edge. */
+.tab-panel .rounded-\[14px\].bg-surface {
+  background: linear-gradient(180deg, rgba(22, 33, 70, .82), rgba(11, 17, 38, .86));
+  -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .07), 0 14px 44px rgba(0, 0, 0, .3);
+}
+.tab-panel .bg-fg.text-bg { transition: box-shadow .2s, transform .2s; }
+.tab-panel .bg-fg.text-bg:hover { box-shadow: 0 0 26px rgba(160, 190, 255, .35); }
+
+/* Previous / next tab links */
+.pager {
+  display: flex; flex-direction: column; gap: 4px; padding: 14px 16px; border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, .12); background: rgba(255, 255, 255, .03);
+  transition: border-color .2s, background .2s;
+}
+.pager:hover { border-color: rgba(255, 255, 255, .35); background: rgba(255, 255, 255, .07); }
+
+/* The ⋮ menu */
+.menu-item {
+  display: flex; align-items: center; gap: 12px; padding: 11px 12px; border-radius: 10px;
+  color: rgba(255, 255, 255, .8); font-weight: 500; transition: background .15s, color .15s;
+}
+.menu-item:hover { background: rgba(255, 255, 255, .07); color: #fff; }
+.menu-item.is-on { background: rgba(242, 196, 109, .12); color: #fff; box-shadow: inset 2px 0 0 #f2c46d; }
+.menu-pop { animation: menu-in .18s ease-out; transform-origin: top right; }
+@keyframes menu-in { from { opacity: 0; transform: translateY(-6px) scale(.97); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .sky-stars::after, .menu-pop { animation: none; }
 }

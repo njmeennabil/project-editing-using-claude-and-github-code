@@ -10,6 +10,7 @@ import type { Crop, MapRain, MapScore, MapSoil, MapSuitability, Place } from "@/
 import { Container, Eyebrow, SectionTitle } from "./Container";
 import { FieldShell, SelectField } from "./FieldCheck";
 import { ScoreRing, VerdictPill } from "./NextCrop";
+import { TabSection } from "./TabSection";
 
 export type MapTarget = "check" | "plan";
 type Layer = "score" | "rain" | "recent" | "soil";
@@ -29,7 +30,7 @@ interface GridSpec {
   east: number;
 }
 
-/** Draw a data grid as a smooth greyscale picture, clipped to Sarawak. Darker = more water. */
+/** Draw a data grid as a smooth picture in the text colour, clipped to Sarawak. Stronger = more water. */
 function gridImage(spec: GridSpec, fg: string, features: GeoFeature[]) {
   const small = document.createElement("canvas");
   small.width = spec.ncols;
@@ -181,8 +182,6 @@ export function SarawakMap({
   // Create the map once (Leaflet needs the browser, so it is loaded here).
   useEffect(() => {
     let cancelled = false;
-    let media: MediaQueryList | null = null;
-    let onTheme: (() => void) | null = null;
     (async () => {
       const lib = (await import("leaflet")).default;
       if (cancelled || !box.current || map.current) return;
@@ -208,18 +207,11 @@ export function SarawakMap({
         setSelected("POINT");
       });
 
-      media = window.matchMedia("(prefers-color-scheme: dark)");
-      const isDark = () => document.documentElement.dataset.theme === "dark" || (document.documentElement.dataset.theme !== "light" && !!media?.matches);
-      const addTiles = () => {
-        tileLayer.current?.remove();
-        const t = tiles(isDark());
-        tileLayer.current = lib
-          .tileLayer(t.url, { attribution: `${t.attribution} · ${BOUNDARY_CREDIT}`, className: t.className, subdomains: t.subdomains, maxZoom: 19 })
-          .addTo(m);
-      };
-      addTiles();
-      onTheme = addTiles;
-      media.addEventListener("change", onTheme);
+      // The site is always dark, so the map uses dark tiles.
+      const t = tiles(true);
+      tileLayer.current = lib
+        .tileLayer(t.url, { attribution: `${t.attribution} · ${BOUNDARY_CREDIT}`, className: t.className, subdomains: t.subdomains, maxZoom: 19 })
+        .addTo(m);
 
       const res = await fetch("/data/sarawak-divisions.geojson");
       const geo = await res.json();
@@ -229,7 +221,7 @@ export function SarawakMap({
         .geoJSON(geo, {
           // Outlines only: taps go through to the map so any exact spot can be chosen.
           interactive: false,
-          style: () => ({ color: "#0a0a0a", weight: 1.2, fillOpacity: 0, opacity: 0.7 }),
+          style: () => ({ color: "#c8d0e6", weight: 1.2, fillOpacity: 0, opacity: 0.7 }),
         })
         .addTo(m);
 
@@ -251,11 +243,41 @@ export function SarawakMap({
     })();
     return () => {
       cancelled = true;
-      if (media && onTheme) media.removeEventListener("change", onTheme);
       map.current?.remove();
       map.current = null;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- the map is created once; divisions never change
+  }, []);
+
+  // The map tab starts hidden, so Leaflet measures it again each time the tab opens.
+  useEffect(() => {
+    let fitted = false;
+    const onShow = () => {
+      const m = map.current;
+      if (!m || !box.current || box.current.clientWidth === 0) return;
+      m.invalidateSize();
+      if (!fitted) {
+        m.fitBounds(SARAWAK, { padding: [10, 10] });
+        fitted = true;
+      }
+    };
+    const onHash = () => {
+      if (window.location.hash === "#map") setTimeout(onShow, 30);
+    };
+    window.addEventListener("hashchange", onHash);
+    window.addEventListener("resize", onShow);
+    const t = setInterval(() => {
+      // Covers opening the site straight on #map, before Leaflet has loaded.
+      if (map.current) {
+        onHash();
+        clearInterval(t);
+      }
+    }, 200);
+    return () => {
+      window.removeEventListener("hashchange", onHash);
+      window.removeEventListener("resize", onShow);
+      clearInterval(t);
+    };
   }, []);
 
   // Fetch scores when the crop, date or tapped point changes.
@@ -368,7 +390,7 @@ export function SarawakMap({
   if (target === "plan") buttons.reverse();
 
   return (
-    <section id="map" aria-labelledby="map-title" className="border-t border-line py-14 md:py-[72px]">
+    <TabSection id="map">
       <Container>
         <div className="mb-7">
           <Eyebrow>Map</Eyebrow>
@@ -426,17 +448,17 @@ export function SarawakMap({
           </div>
           <span className="text-[0.8rem] text-muted">
             {layer === "score"
-              ? "Darker divisions have a higher climate score for this crop and date."
+              ? "Brighter divisions have a higher climate score for this crop and date."
               : layer === "rain"
                 ? rain
-                  ? `NASA GPM: normal rain over the ${rain.crop.name.toLowerCase()} season (${rain.season.months}, ${rain.season.days} days) from ${rain.normals_period}, about 10 km detail. Lighter ≈ ${num(rain.season.min ?? 0)} mm, darker ≈ ${num(rain.season.max ?? 0)} mm.`
+                  ? `NASA GPM: normal rain over the ${rain.crop.name.toLowerCase()} season (${rain.season.months}, ${rain.season.days} days) from ${rain.normals_period}, about 10 km detail. Faint ≈ ${num(rain.season.min ?? 0)} mm, bright ≈ ${num(rain.season.max ?? 0)} mm.`
                   : "Loading NASA GPM rainfall…"
                 : layer === "recent"
                   ? rain?.recent
-                    ? `NASA GPM: rain from ${rain.recent.start} to ${rain.recent.end} compared with normal. Lighter = drier than normal, darker = wetter.`
+                    ? `NASA GPM: rain from ${rain.recent.start} to ${rain.recent.end} compared with normal. Faint = drier than normal, bright = wetter.`
                     : "Loading NASA GPM rainfall…"
                   : soil
-                    ? `NASA SMAP: root-zone soil moisture ${soil.start} to ${soil.end} compared with the usual for this month (${soil.normals_period}), about 9 km. Lighter = drier than usual, darker = wetter.`
+                    ? `NASA SMAP: root-zone soil moisture ${soil.start} to ${soil.end} compared with the usual for this month (${soil.normals_period}), about 9 km. Faint = drier than usual, bright = wetter.`
                     : "Loading NASA SMAP soil moisture…"}
             {rainError && layer !== "score" ? ` ${rainError}` : ""}
           </span>
@@ -521,6 +543,6 @@ export function SarawakMap({
           </div>
         </div>
       </Container>
-    </section>
+    </TabSection>
   );
 }

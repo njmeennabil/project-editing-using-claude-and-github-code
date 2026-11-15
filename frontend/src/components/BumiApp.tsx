@@ -9,6 +9,8 @@ import { CropGuide } from "./CropGuide";
 import { FieldCheck } from "./FieldCheck";
 import { NextCrop } from "./NextCrop";
 import { Rotation } from "./Rotation";
+import { goToTab } from "@/lib/tabs";
+import { TabSection } from "./TabSection";
 import { type MapTarget, SarawakMap } from "./SarawakMap";
 
 /**
@@ -61,9 +63,9 @@ export function BumiApp({
 
   function pickOnMap(target: MapTarget) {
     setMapTarget(target);
-    // Let the dropdown close first (phones), then move to the map.
+    // Let the dropdown close first (phones), then open the map tab.
     (document.activeElement as HTMLElement | null)?.blur();
-    setTimeout(() => document.getElementById("map")?.scrollIntoView({ behavior: "smooth", block: "start" }), 80);
+    setTimeout(() => goToTab("map"), 80);
   }
 
   function useMapPlace(target: MapTarget, place: Omit<MapPlace, "nonce">) {
@@ -71,17 +73,18 @@ export function BumiApp({
     if (target === "check") setCheckPlace(withNonce);
     else setPlanPlace(withNonce);
     setMapTarget(null);
+    goToTab(target);
   }
 
   function viewGuide(code: string) {
     setSelected(code);
-    document.getElementById("crops")?.scrollIntoView();
-    document.getElementById("guide-panel")?.focus({ preventScroll: true });
+    goToTab("crops");
+    setTimeout(() => document.getElementById("guide-panel")?.focus({ preventScroll: true }), 50);
   }
 
   if (!data) {
     return (
-      <section id="check" aria-labelledby="check-title" className="py-14 md:py-[72px]">
+      <TabSection id="check">
         <Container>
           <Eyebrow>Field check</Eyebrow>
           <SectionTitle id="check-title">How suitable is your field?</SectionTitle>
@@ -109,7 +112,7 @@ export function BumiApp({
             )}
           </div>
         </Container>
-      </section>
+      </TabSection>
     );
   }
 

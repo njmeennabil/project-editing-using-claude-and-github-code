@@ -1,12 +1,13 @@
 import { maturity, phRange, range, waterText } from "@/lib/format";
 import type { Crop } from "@/lib/types";
 import { Container, Eyebrow, SectionTitle } from "./Container";
+import { TabSection } from "./TabSection";
 
 export function Compare({ crops }: { crops: Crop[] }) {
   const head = ["Crop", "Type", "Soil pH", "Temp (°C)", "Water / season", "Key nutrient", "Nitrogen", "Maturity"];
   const cell = "px-4 py-3.5 text-left align-top border-b border-line";
   return (
-    <section id="compare" aria-labelledby="compare-title" className="py-14 md:py-[72px]">
+    <TabSection id="compare">
       <Container>
         <div className="mb-7">
           <Eyebrow>Compare</Eyebrow>
@@ -41,6 +42,6 @@ export function Compare({ crops }: { crops: Crop[] }) {
           </table>
         </div>
       </Container>
-    </section>
+    </TabSection>
   );
 }

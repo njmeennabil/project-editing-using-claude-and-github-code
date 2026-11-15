@@ -1,5 +1,6 @@
 import { Container, Eyebrow, SectionTitle } from "./Container";
 import { StatusPill } from "./Status";
+import { TabSection } from "./TabSection";
 
 const RULES: [string, string, string, string][] = [
   ["Soil pH", "Within range", "–", "Outside range"],
@@ -10,7 +11,7 @@ const RULES: [string, string, string, string][] = [
 export function About() {
   const cell = "py-3 pr-3.5 text-left align-top border-b border-line";
   return (
-    <section id="about" aria-labelledby="about-title" className="py-14 md:py-[72px]">
+    <TabSection id="about">
       <Container className="grid grid-cols-1 gap-8 lg:grid-cols-[1.4fr_1fr] lg:gap-12">
         <div className="min-w-0">
           <Eyebrow>About</Eyebrow>
@@ -91,7 +92,7 @@ export function About() {
           </AboutCard>
         </div>
       </Container>
-    </section>
+    </TabSection>
   );
 }
 
