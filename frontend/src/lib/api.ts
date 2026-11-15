@@ -1,5 +1,5 @@
 // Calls to the BUMI360 Flask API. Used on the server (prerender) and in the browser.
-import type { CheckResponse, Crop, FieldInput, Place, RotationItem, SiteData } from "./types";
+import type { CheckResponse, Crop, FieldInput, Place, PlanInput, PlanResponse, RotationItem, SiteData } from "./types";
 
 export const API_URL = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000").replace(/\/+$/, "");
 
@@ -54,6 +54,23 @@ export function checkField(input: FieldInput, signal?: AbortSignal, timeoutMs?: 
       body: JSON.stringify(checkPayload(input)),
       signal,
     },
+    timeoutMs,
+  );
+}
+
+export function planNextCrop(input: PlanInput, signal?: AbortSignal, timeoutMs?: number): Promise<PlanResponse> {
+  const place = input.location === "GPS" ? { lat: input.lat, lon: input.lon } : { location: input.location };
+  const body = {
+    current: input.current,
+    planted: input.planted,
+    ph: input.ph,
+    prep_days: input.prep_days,
+    irrigation: input.irrigation,
+    ...place,
+  };
+  return request<PlanResponse>(
+    "/api/rotation/plan",
+    { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body), signal },
     timeoutMs,
   );
 }

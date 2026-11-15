@@ -23,6 +23,7 @@ python3 -m venv .venv
 | GET | `/api/rotation` | Rotation pairs and notes |
 | GET | `/api/locations` | Sarawak's 12 divisions |
 | GET | `/api/climate?location=KUCHING` | Monthly NASA POWER temperature and rainfall (or `?lat=&lon=`) |
+| GET / POST | `/api/rotation/plan` | Next-crop planner: `current` (crop code), `planted` (YYYY-MM-DD), `location` (or `lat`/`lon`), `ph`, optional `prep_days` (default 14) and `irrigation`. Scores all 5 crops 0–100 and returns the top 3 |
 | GET / POST | `/api/check` | Suitability. Either `ph`, `temp`, `water`, or `ph`, `location` (or `lat`/`lon`), `month`, `irrigation`. Optional `crop` (`all` or a code) |
 
 Example:
@@ -68,3 +69,17 @@ NASA Earth Science/Applied Science Program.
 
 `render.yaml` at the repository root describes the service. In Render choose
 **New + → Blueprint** and pick this repository.
+
+## Next-crop planner (`planner.py`)
+
+1. Expected harvest = planting date + the current crop's maturity days; next planting = harvest + `prep_days`.
+2. Each crop is scored for its own season starting on that date (NASA POWER, day by day):
+
+| Part | Points | Rule |
+|---|---|---|
+| Climate fit | 45 | Temperature 22.5 (−4.5 per °C outside the best range) + water 22.5 (shortfall in proportion; excess down to 40%; 18 for crops with no mm figure) |
+| Rotation | 35 | `penilaian_giliran` table: Excellent 35 · Good 26 · Fair 16 · Poor 5 |
+| Soil pH | 20 | −10 per pH unit outside the range; 0 below a danger level |
+
+A Poor rotation caps the verdict at "Possible with care". Most rotation ratings are drafts
+(`disahkan = 0` in the database) awaiting expert review.

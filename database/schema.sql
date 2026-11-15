@@ -7,6 +7,7 @@ PRAGMA foreign_keys = ON;
 DROP VIEW  IF EXISTS v_perbandingan;
 DROP TABLE IF EXISTS program_baja;
 DROP TABLE IF EXISTS nota_giliran;
+DROP TABLE IF EXISTS penilaian_giliran;
 DROP TABLE IF EXISTS giliran_tanaman;
 DROP TABLE IF EXISTS jarak_tanaman;
 DROP TABLE IF EXISTS amalan;
@@ -121,6 +122,19 @@ CREATE TABLE giliran_tanaman (
     tanaman_selepas_id   INTEGER NOT NULL REFERENCES tanaman(id) ON DELETE CASCADE,
     kesan_hasil_peratus  REAL,                      -- peningkatan hasil dilaporkan (%)
     nota                 TEXT,
+    UNIQUE (tanaman_sebelum_id, tanaman_selepas_id)
+);
+
+-- Penilaian giliran untuk setiap pasangan tanaman (5 x 5), digunakan oleh
+-- pencadang tanaman seterusnya. disahkan = 0 bermaksud draf, perlu disemak pakar.
+CREATE TABLE penilaian_giliran (
+    id                   INTEGER PRIMARY KEY,
+    tanaman_sebelum_id   INTEGER NOT NULL REFERENCES tanaman(id) ON DELETE CASCADE,
+    tanaman_selepas_id   INTEGER NOT NULL REFERENCES tanaman(id) ON DELETE CASCADE,
+    penilaian            TEXT NOT NULL CHECK (penilaian IN ('cemerlang', 'baik', 'sederhana', 'lemah')),
+    sebab                TEXT NOT NULL,
+    sumber               TEXT NOT NULL,
+    disahkan             INTEGER NOT NULL DEFAULT 0 CHECK (disahkan IN (0, 1)),
     UNIQUE (tanaman_sebelum_id, tanaman_selepas_id)
 );
 

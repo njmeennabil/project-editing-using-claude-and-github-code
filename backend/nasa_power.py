@@ -12,6 +12,7 @@ POWER Project funded through the NASA Earth Science/Applied Science Program.
 """
 import json
 import threading
+from datetime import timedelta
 from pathlib import Path
 from urllib.error import URLError
 from urllib.parse import urlencode
@@ -123,3 +124,18 @@ def season(climate, start_month, days):
         m = (m + 1) % 12
     label = MONTH_NAMES[months[0]] if len(months) == 1 else f"{MONTH_NAMES[months[0]]}–{MONTH_NAMES[months[-1]]}"
     return {"temp_c": round(temp_sum / days, 1), "rain_mm": round(rain), "months": label}
+
+
+def season_from_date(climate, start, days):
+    """Average temperature and total rainfall for `days` days from an exact start date."""
+    rain = 0.0
+    temp_sum = 0.0
+    for d in range(days):
+        m = (start + timedelta(days=d)).month - 1
+        rain += climate["rain_mm_day"][m]
+        temp_sum += climate["temp_c"][m]
+    end = start + timedelta(days=days - 1)
+    first, last = MONTH_NAMES[start.month - 1], MONTH_NAMES[end.month - 1]
+    label = first if (first == last and days <= 31) else f"{first}–{last}"
+    return {"temp_c": round(temp_sum / days, 1), "rain_mm": round(rain), "months": label,
+            "start": start.isoformat(), "end": end.isoformat()}

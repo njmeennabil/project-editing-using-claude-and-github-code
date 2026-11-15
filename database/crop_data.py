@@ -105,6 +105,15 @@ def load_data(db_path=DEFAULT_DB):
             JOIN tanaman s ON s.id = g.tanaman_sebelum_id
             JOIN tanaman e ON e.id = g.tanaman_selepas_id ORDER BY g.id""")],
         "rotation_notes": [tr(r["nota"]) for r in rows("SELECT nota FROM nota_giliran ORDER BY id")],
+        "rotation_ratings": [{
+            "before": r["sebelum"], "after": r["selepas"],
+            "rating": r["penilaian"], "label": tr(r["penilaian"]),
+            "reason": tr(r["sebab"]), "source": tr(r["sumber"]), "verified": bool(r["disahkan"]),
+        } for r in rows("""
+            SELECT s.kod AS sebelum, e.kod AS selepas, g.penilaian, g.sebab, g.sumber, g.disahkan
+            FROM penilaian_giliran g
+            JOIN tanaman s ON s.id = g.tanaman_sebelum_id
+            JOIN tanaman e ON e.id = g.tanaman_selepas_id ORDER BY g.id""")],
     }
 
     con.close()
