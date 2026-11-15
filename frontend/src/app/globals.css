@@ -51,3 +51,38 @@ body {
 }
 h1, h2, h3, h4 { text-wrap: balance; }
 :focus-visible { outline: 2px solid var(--fg); outline-offset: 2px; }
+
+/* ---------- Sarawak map (Leaflet) ---------- */
+.bumi-map .leaflet-container { background: var(--bg-alt); font-family: var(--font-sans); }
+.bumi-map .leaflet-control-attribution { background: color-mix(in srgb, var(--surface) 88%, transparent); color: var(--muted); font-size: 11px; }
+.bumi-map .leaflet-control-attribution a { color: var(--fg); }
+.bumi-map .leaflet-bar { border: 1px solid var(--line); box-shadow: none; }
+.bumi-map .leaflet-bar a { background: var(--surface); color: var(--fg); border-bottom-color: var(--line); }
+.bumi-map .leaflet-bar a:hover { background: var(--bg-alt); }
+.bw-tiles { filter: grayscale(1) contrast(1.05); }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .bw-tiles { filter: grayscale(1) invert(1) brightness(0.85) contrast(0.95); }
+}
+:root[data-theme="dark"] .bw-tiles { filter: grayscale(1) invert(1) brightness(0.85) contrast(0.95); }
+
+.bumi-pin-wrap { background: none; border: 0; }
+.bumi-pin {
+  position: absolute; transform: translate(-50%, -50%);
+  display: flex; align-items: center; gap: 6px; white-space: nowrap;
+  padding: 3px 9px 3px 4px; border-radius: 999px; border: 2px solid var(--fg);
+  background: var(--surface); color: var(--fg); font: 600 12px/1 var(--font-sans);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, .25); cursor: pointer;
+}
+.bumi-pin b {
+  display: inline-grid; place-items: center; min-width: 26px; height: 22px; padding: 0 4px;
+  border-radius: 999px; font: 700 12px/1 var(--font-sans); font-variant-numeric: tabular-nums;
+}
+.bumi-pin.hr b { background: var(--fg); color: var(--bg); }
+.bumi-pin.r b { border: 2px solid var(--fg); }
+.bumi-pin.p b { border: 2px solid var(--fg); }
+.bumi-pin.p b::after { content: "!"; margin-left: 2px; }
+.bumi-pin.n b { border: 2px dashed var(--fg); }
+.bumi-pin.sel { outline: 3px solid var(--fg); outline-offset: 2px; }
+.zoom-low .bumi-pin { padding: 2px; gap: 0; }
+.zoom-low .bumi-pin span { display: none; }
+.zoom-low .bumi-pin.sel span { display: inline; padding-right: 6px; }

@@ -1,5 +1,5 @@
 // Calls to the BUMI360 Flask API. Used on the server (prerender) and in the browser.
-import type { CheckResponse, Crop, FieldInput, Place, PlanInput, PlanResponse, RotationItem, SiteData } from "./types";
+import type { CheckResponse, Crop, FieldInput, MapSuitability, Place, PlanInput, PlanResponse, RotationItem, SiteData } from "./types";
 
 export const API_URL = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000").replace(/\/+$/, "");
 
@@ -36,12 +36,17 @@ export async function getSiteData(timeoutMs?: number): Promise<SiteData> {
   return { crops: crops.crops, rotation: rotation.rotation, notes: rotation.notes, locations: places.locations };
 }
 
+/** GPS and map points are sent as coordinates; divisions by their code. */
+export const usesCoordinates = (location: string) => location === "GPS" || location === "MAP";
+
 /** What the API needs for each mode: NASA climate (place + month) or manual readings. */
 export function checkPayload(input: FieldInput) {
   if (input.mode === "manual") {
     return { ph: input.ph, temp: input.temp, water: input.water, crop: input.crop };
   }
-  const place = input.location === "GPS" ? { lat: input.lat, lon: input.lon } : { location: input.location };
+  const place = usesCoordinates(input.location)
+    ? { lat: input.lat, lon: input.lon, point: input.location === "MAP" ? "map" : "gps" }
+    : { location: input.location };
   return { ph: input.ph, crop: input.crop, month: input.month, irrigation: input.irrigation, ...place };
 }
 
@@ -59,7 +64,9 @@ export function checkField(input: FieldInput, signal?: AbortSignal, timeoutMs?: 
 }
 
 export function planNextCrop(input: PlanInput, signal?: AbortSignal, timeoutMs?: number): Promise<PlanResponse> {
-  const place = input.location === "GPS" ? { lat: input.lat, lon: input.lon } : { location: input.location };
+  const place = usesCoordinates(input.location)
+    ? { lat: input.lat, lon: input.lon, point: input.location === "MAP" ? "map" : "gps" }
+    : { location: input.location };
   const body = {
     current: input.current,
     planted: input.planted,
@@ -73,4 +80,17 @@ export function planNextCrop(input: PlanInput, signal?: AbortSignal, timeoutMs?:
     { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body), signal },
     timeoutMs,
   );
+}
+
+export function getMapSuitability(
+  q: { crop: string; planted: string; irrigation?: string; lat?: string; lon?: string },
+  signal?: AbortSignal,
+): Promise<MapSuitability> {
+  const params = new URLSearchParams({ crop: q.crop, planted: q.planted });
+  if (q.irrigation) params.set("irrigation", q.irrigation);
+  if (q.lat && q.lon) {
+    params.set("lat", q.lat);
+    params.set("lon", q.lon);
+  }
+  return request<MapSuitability>(`/api/map/suitability?${params}`, { signal }, 70000);
 }

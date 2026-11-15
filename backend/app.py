@@ -7,6 +7,8 @@ Endpoints
     GET  /api/rotation               Crop rotation pairs and notes
     POST /api/rotation/plan  {"current": "JAGUNG", "planted": "2026-03-02", "location": "KUCHING", "ph": 6.2}
          scores the 5 crops 0–100 for the next season and returns the top 3
+    GET  /api/map/suitability?crop=JAGUNG&planted=2026-03-02[&lat=&lon=][&irrigation=]
+         climate suitability (0–100) of one crop in all 12 Sarawak divisions, plus an optional map point
     GET  /api/locations              Sarawak divisions with NASA climate data
     GET  /api/climate?location=KUCHING   (or ?lat=1.55&lon=110.35) monthly NASA POWER climate
     GET  /api/check?ph=&temp=&water=&crop=
@@ -77,6 +79,16 @@ def parse_number(raw, field):
     return value
 
 
+def parse_date(raw):
+    try:
+        d = date.fromisoformat(str(raw or "").strip())
+    except ValueError:
+        raise BadInput("Planting date must look like 2026-03-02 (year-month-day).")
+    if not date(2000, 1, 1) <= d <= date(2100, 12, 31):
+        raise BadInput("Planting date must be between 2000 and 2100.")
+    return d
+
+
 def resolve_climate(src):
     """Return (place, climate) from a 'location' code or 'lat'/'lon', or (None, None)."""
     code = str(src.get("location") or "").strip().upper()
@@ -100,7 +112,8 @@ def resolve_climate(src):
             data = nasa_power.climate_for_point(lat, lon)
         except nasa_power.ClimateUnavailable as e:
             raise Upstream(str(e))
-        return {"code": "GPS", "name": f"Your location ({lat:.2f}, {lon:.2f})", "lat": lat, "lon": lon}, data
+        label = "Map point" if str(src.get("point") or "").lower() == "map" else "Your location"
+        return {"code": "GPS", "name": f"{label} ({lat:.2f}, {lon:.2f})", "lat": lat, "lon": lon}, data
     return None, None
 
 
@@ -170,6 +183,41 @@ def create_app():
         return jsonify(location=place, source=POWER_SOURCE, period=data.get("period"), monthly=monthly,
                        rain_mm_year=sum(m["rain_mm"] for m in monthly))
 
+    @app.get("/api/map/suitability")
+    def map_suitability():
+        src = request.args
+        data = get_data()
+        by_code = {c["code"]: c for c in data["crops"]}
+        code = str(src.get("crop") or "").strip().upper()
+        if code not in by_code:
+            raise BadInput("Choose a crop: " + ", ".join(by_code) + ".")
+        planted = parse_date(src.get("planted"))
+        irrigation = parse_number(src.get("irrigation"), "irrigation") or 0.0
+        crop = by_code[code]
+
+        divisions = []
+        for d in SARAWAK_DIVISIONS:
+            clim = nasa_power.climate_for_location(d["code"])
+            if clim is None:
+                continue
+            divisions.append({**d, **planner.climate_score(crop, clim, planted, irrigation)})
+
+        point = None
+        lat = parse_number(src.get("lat"), "lat")
+        lon = parse_number(src.get("lon"), "lon")
+        if lat is not None or lon is not None:
+            place, clim = resolve_climate({"lat": lat, "lon": lon})
+            point = {**place, **planner.climate_score(crop, clim, planted, irrigation)}
+
+        return jsonify(
+            crop={"code": crop["code"], "name": crop["name"], "local_name": crop["local_name"]},
+            planted=planted.isoformat(),
+            irrigation=irrigation,
+            source=POWER_SOURCE,
+            divisions=divisions,
+            point=point,
+        )
+
     @app.route("/api/rotation/plan", methods=["GET", "POST"])
     def rotation_plan():
         src = (request.get_json(silent=True) or {}) if request.method == "POST" else request.args
@@ -178,13 +226,7 @@ def create_app():
         current = str(src.get("current") or "").strip().upper()
         if current not in codes:
             raise BadInput("Choose the crop you are growing now: " + ", ".join(codes) + ".")
-        raw_date = str(src.get("planted") or "").strip()
-        try:
-            planted = date.fromisoformat(raw_date)
-        except ValueError:
-            raise BadInput("Planting date must look like 2026-03-02 (year-month-day).")
-        if not date(2000, 1, 1) <= planted <= date(2100, 12, 31):
-            raise BadInput("Planting date must be between 2000 and 2100.")
+        planted = parse_date(src.get("planted"))
         ph = parse_number(src.get("ph"), "ph")
         if ph is None:
             raise BadInput("Enter your soil pH to score the next crop.")

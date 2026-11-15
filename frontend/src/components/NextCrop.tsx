@@ -5,7 +5,7 @@ import { ApiError, planNextCrop } from "@/lib/api";
 import { DEFAULT_PLAN } from "@/lib/defaults";
 import { num } from "@/lib/format";
 import { locateMe, niceDate } from "@/lib/geo";
-import type { Crop, Place, PlanInput, PlanOption, PlanResponse } from "@/lib/types";
+import type { Crop, MapPlace, Place, PlanInput, PlanOption, PlanResponse } from "@/lib/types";
 import { Container, Eyebrow, Panel, SectionTitle } from "./Container";
 import { FieldShell, NumberField, SelectField } from "./FieldCheck";
 
@@ -18,7 +18,7 @@ const VERDICT_STYLE: Record<string, { cls: string; sym: string }> = {
   "Not recommended": { cls: "border-dashed border-fg text-fg", sym: "✕" },
 };
 
-function VerdictPill({ verdict }: { verdict: string }) {
+export function VerdictPill({ verdict }: { verdict: string }) {
   const v = VERDICT_STYLE[verdict] ?? VERDICT_STYLE["Possible with care"];
   return (
     <span className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border-[1.5px] px-2.5 py-1 text-[0.8rem] font-semibold ${v.cls}`}>
@@ -28,7 +28,7 @@ function VerdictPill({ verdict }: { verdict: string }) {
   );
 }
 
-function ScoreRing({ score, size = 92 }: { score: number; size?: number }) {
+export function ScoreRing({ score, size = 92 }: { score: number; size?: number }) {
   const r = 40;
   const c = 2 * Math.PI * r;
   return (
@@ -129,11 +129,15 @@ export function NextCrop({
   locations,
   initialPlan,
   onViewGuide,
+  mapPlace = null,
+  onPickOnMap,
 }: {
   crops: Crop[];
   locations: Place[];
   initialPlan: PlanResponse | null;
   onViewGuide: (code: string) => void;
+  mapPlace?: MapPlace | null;
+  onPickOnMap?: () => void;
 }) {
   const [form, setForm] = useState<PlanInput>(DEFAULT_PLAN);
   const [data, setData] = useState<PlanResponse | null>(initialPlan);
@@ -153,6 +157,17 @@ export function NextCrop({
     const t = setTimeout(() => setForm(saved!), 0);
     return () => clearTimeout(t);
   }, []);
+
+  // A place chosen on the map
+  useEffect(() => {
+    if (!mapPlace) return;
+    const t = setTimeout(() => {
+      setGps({ state: "idle" });
+      setForm((f) => ({ ...f, location: mapPlace.location, lat: mapPlace.lat, lon: mapPlace.lon }));
+      document.getElementById("plan")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 80);
+    return () => clearTimeout(t);
+  }, [mapPlace]);
 
   const waitingForGps = form.location === "GPS" && (!form.lat || !form.lon);
 
@@ -189,6 +204,10 @@ export function NextCrop({
 
   function onLocationChange(e: React.ChangeEvent<HTMLSelectElement>) {
     const value = e.target.value;
+    if (value === "PICK") {
+      onPickOnMap?.();
+      return;
+    }
     if (value !== "GPS") {
       setGps({ state: "idle" });
       setForm((f) => ({ ...f, location: value }));
@@ -259,7 +278,9 @@ export function NextCrop({
                         ? gps.message!
                         : form.location === "GPS"
                           ? `Using your location: ${form.lat}, ${form.lon}`
-                          : "Division, or use your phone's location"
+                          : form.location === "MAP"
+                            ? `Using the map point: ${form.lat}, ${form.lon}`
+                            : "Division, GPS, or a point on the map"
                   }
                   hintAlert={gps.state === "error"}
                 >
@@ -267,6 +288,8 @@ export function NextCrop({
                     <option key={l.code} value={l.code}>{l.name}</option>
                   ))}
                   <option value="GPS">Use my location (GPS)</option>
+                      {form.location === "MAP" && <option value="MAP">Point chosen on map</option>}
+                      <option value="PICK">Choose on map…</option>
                 </SelectField>
                 <NumberField id="plan-ph" label="Soil pH" unit="pH" hint="From a soil test, scale 0–14" step="0.1" value={form.ph} onChange={set("ph")} />
                 <NumberField id="plan-prep" label="Days to prepare the land" unit="days" hint="Between harvest and next planting" step="1" value={form.prep_days} onChange={set("prep_days")} />

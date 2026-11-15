@@ -2,13 +2,14 @@
 
 import { useEffect, useState } from "react";
 import { getSiteData } from "@/lib/api";
-import type { CheckResponse, PlanResponse, SiteData } from "@/lib/types";
+import type { CheckResponse, MapPlace, PlanResponse, SiteData } from "@/lib/types";
 import { Compare } from "./Compare";
 import { Container, Eyebrow, SectionTitle } from "./Container";
 import { CropGuide } from "./CropGuide";
 import { FieldCheck } from "./FieldCheck";
 import { NextCrop } from "./NextCrop";
 import { Rotation } from "./Rotation";
+import { type MapTarget, SarawakMap } from "./SarawakMap";
 
 /**
  * Everything that needs crop data. Uses the data prerendered on the server when
@@ -54,6 +55,24 @@ export function BumiApp({
     };
   }, [data, retry]);
 
+  const [mapTarget, setMapTarget] = useState<MapTarget | null>(null);
+  const [checkPlace, setCheckPlace] = useState<MapPlace | null>(null);
+  const [planPlace, setPlanPlace] = useState<MapPlace | null>(null);
+
+  function pickOnMap(target: MapTarget) {
+    setMapTarget(target);
+    // Let the dropdown close first (phones), then move to the map.
+    (document.activeElement as HTMLElement | null)?.blur();
+    setTimeout(() => document.getElementById("map")?.scrollIntoView({ behavior: "smooth", block: "start" }), 80);
+  }
+
+  function useMapPlace(target: MapTarget, place: Omit<MapPlace, "nonce">) {
+    const withNonce = { ...place, nonce: Date.now() };
+    if (target === "check") setCheckPlace(withNonce);
+    else setPlanPlace(withNonce);
+    setMapTarget(null);
+  }
+
   function viewGuide(code: string) {
     setSelected(code);
     document.getElementById("crops")?.scrollIntoView();
@@ -96,8 +115,23 @@ export function BumiApp({
 
   return (
     <>
-      <FieldCheck crops={data.crops} locations={data.locations} initialCheck={initialCheck} onViewGuide={viewGuide} />
-      <NextCrop crops={data.crops} locations={data.locations} initialPlan={initialPlan} onViewGuide={viewGuide} />
+      <FieldCheck
+        crops={data.crops}
+        locations={data.locations}
+        initialCheck={initialCheck}
+        onViewGuide={viewGuide}
+        mapPlace={checkPlace}
+        onPickOnMap={() => pickOnMap("check")}
+      />
+      <NextCrop
+        crops={data.crops}
+        locations={data.locations}
+        initialPlan={initialPlan}
+        onViewGuide={viewGuide}
+        mapPlace={planPlace}
+        onPickOnMap={() => pickOnMap("plan")}
+      />
+      <SarawakMap crops={data.crops} locations={data.locations} target={mapTarget} onUse={useMapPlace} />
       <CropGuide crops={data.crops} rotation={data.rotation} selected={selected} onSelect={setSelected} />
       <Compare crops={data.crops} />
       <Rotation rotation={data.rotation} notes={data.notes} />
