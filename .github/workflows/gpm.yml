@@ -1,4 +1,4 @@
-name: Update NASA GPM rainfall
+name: Update NASA GPM rainfall and SMAP soil moisture
 
 on:
   schedule:
@@ -11,7 +11,7 @@ on:
         default: false
   push:                          # also runs on development branches when the pipeline changes
     branches: ["claude/**"]
-    paths: ["backend/scripts/update_gpm.py", ".github/workflows/gpm.yml"]
+    paths: ["backend/scripts/update_gpm.py", "backend/scripts/update_smap.py", ".github/workflows/gpm.yml"]
 
 permissions:
   contents: write
@@ -43,11 +43,11 @@ jobs:
             exit 1
           fi
 
-      - name: Compare IMERG Late with Final (development branches)
+      - name: Test SMAP access (development branches)
         if: github.event_name == 'push'
         env:
           EARTHDATA_TOKEN: ${{ secrets.EARTHDATA_TOKEN }}
-        run: python backend/scripts/update_gpm.py --bias-check
+        run: python backend/scripts/update_smap.py --probe
 
       - name: Download GPM rainfall for Sarawak
         env:
