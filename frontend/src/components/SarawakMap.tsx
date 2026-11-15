@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import { ApiError, getMapRain, getMapSoil, getMapSuitability } from "@/lib/api";
 import { DEFAULT_PLAN } from "@/lib/defaults";
 import { num } from "@/lib/format";
+import { DRY_WET_RAMP, RAIN_RAMP, type Rgb, SCORE_BANDS, diverging, rampCss, scoreBand, sequential } from "@/lib/map-colors";
 import type { Crop, MapRain, MapScore, MapSoil, MapSuitability, Place } from "@/lib/types";
 import { Container, Eyebrow, SectionTitle } from "./Container";
 import { FieldShell, SelectField } from "./FieldCheck";
@@ -30,14 +31,13 @@ interface GridSpec {
   east: number;
 }
 
-/** Draw a data grid as a smooth picture in the text colour, clipped to Sarawak. Stronger = more water. */
-function gridImage(spec: GridSpec, fg: string, features: GeoFeature[]) {
+/** Draw a data grid as a smooth coloured picture, clipped to Sarawak. */
+function gridImage(spec: GridSpec, colour: (t: number) => [Rgb, number], features: GeoFeature[]) {
   const small = document.createElement("canvas");
   small.width = spec.ncols;
   small.height = spec.nrows;
   const sc = small.getContext("2d")!;
   const img = sc.createImageData(spec.ncols, spec.nrows);
-  const [r, gg, b] = (fg.match(/[0-9a-f]{2}/gi) ?? ["0a", "0a", "0a"]).map((h) => parseInt(h, 16));
   for (let j = 0; j < spec.nrows; j++) {
     for (let i = 0; i < spec.ncols; i++) {
       const v = spec.values[j]?.[i];
@@ -45,10 +45,11 @@ function gridImage(spec: GridSpec, fg: string, features: GeoFeature[]) {
       const row = spec.northFirst ? j : spec.nrows - 1 - j;
       const k = (row * spec.ncols + i) * 4;
       const t = Math.max(0, Math.min(1, (v - spec.lo) / (spec.hi - spec.lo || 1)));
+      const [[r, gg, b], a] = colour(t);
       img.data[k] = r;
       img.data[k + 1] = gg;
       img.data[k + 2] = b;
-      img.data[k + 3] = Math.round(30 + t * 200);
+      img.data[k + 3] = a;
     }
   }
   sc.putImageData(img, 0, 0);
@@ -334,8 +335,7 @@ export function SarawakMap({
     if (layer === "soil") spec = soil ? soilSpec(soil) : null;
     else if (rain && (layer === "rain" || rain.recent)) spec = rainSpec(rain, layer);
     if (!spec) return;
-    const fg = getComputedStyle(document.documentElement).getPropertyValue("--fg").trim() || "#0a0a0a";
-    const pic = gridImage(spec, fg, features.current);
+    const pic = gridImage(spec, layer === "rain" ? sequential : diverging, features.current);
     rainLayer.current = lib.imageOverlay(pic.url, pic.bounds, { opacity: 0.85, interactive: false }).addTo(m);
   }, [ready, layer, rain, soil]);
 
@@ -348,8 +348,9 @@ export function SarawakMap({
     shapes.current?.setStyle((f) => {
       const s = scores.get(f?.properties.code);
       const sel = f?.properties.code === selected;
-      const fill = layer !== "score" || s == null ? 0 : (s / 100) * 0.28;
-      return { color: fg, weight: sel ? 3 : 1.2, opacity: sel ? 1 : 0.7, fillColor: fg, fillOpacity: fill };
+      const band = s == null ? null : scoreBand(s);
+      const fill = layer !== "score" || !band ? 0 : band.opacity;
+      return { color: fg, weight: sel ? 3 : 1.2, opacity: sel ? 1 : 0.7, fillColor: band?.color ?? fg, fillOpacity: fill };
     });
     locations.forEach((d) => {
       const pin = pins.current.get(d.code);
@@ -448,17 +449,17 @@ export function SarawakMap({
           </div>
           <span className="text-[0.8rem] text-muted">
             {layer === "score"
-              ? "Brighter divisions have a higher climate score for this crop and date."
+              ? "Climate score for this crop and date in each division: green suits it, red does not."
               : layer === "rain"
                 ? rain
-                  ? `NASA GPM: normal rain over the ${rain.crop.name.toLowerCase()} season (${rain.season.months}, ${rain.season.days} days) from ${rain.normals_period}, about 10 km detail. Faint ≈ ${num(rain.season.min ?? 0)} mm, bright ≈ ${num(rain.season.max ?? 0)} mm.`
+                  ? `NASA GPM: normal rain over the ${rain.crop.name.toLowerCase()} season (${rain.season.months}, ${rain.season.days} days) from ${rain.normals_period}, about 10 km detail. Deeper blue = more rain.`
                   : "Loading NASA GPM rainfall…"
                 : layer === "recent"
                   ? rain?.recent
-                    ? `NASA GPM: rain from ${rain.recent.start} to ${rain.recent.end} compared with normal. Faint = drier than normal, bright = wetter.`
+                    ? `NASA GPM: rain from ${rain.recent.start} to ${rain.recent.end} compared with normal. Brown = drier than normal, blue = wetter.`
                     : "Loading NASA GPM rainfall…"
                   : soil
-                    ? `NASA SMAP: root-zone soil moisture ${soil.start} to ${soil.end} compared with the usual for this month (${soil.normals_period}), about 9 km. Faint = drier than usual, bright = wetter.`
+                    ? `NASA SMAP: root-zone soil moisture ${soil.start} to ${soil.end} compared with the usual for this month (${soil.normals_period}), about 9 km. Brown = drier than usual, blue = wetter.`
                     : "Loading NASA SMAP soil moisture…"}
             {rainError && layer !== "score" ? ` ${rainError}` : ""}
           </span>
@@ -467,12 +468,14 @@ export function SarawakMap({
         <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
           <div className="bumi-map relative isolate min-w-0 overflow-hidden rounded-[14px] border border-line">
             <div ref={box} className="h-[58vh] max-h-[640px] min-h-[380px] w-full" role="application" aria-label="Map of Sarawak divisions" />
+            <MapLegend layer={layer} rain={rain} soilReady={!!soil} where="over" />
             {loading && (
-              <span className="absolute left-3 top-3 z-[500] rounded-full border border-line bg-surface px-3 py-1 text-[0.8rem] font-semibold">
+              <span className="absolute right-3 top-3 z-[500] rounded-full border border-line bg-surface px-3 py-1 text-[0.8rem] font-semibold">
                 Updating…
               </span>
             )}
           </div>
+          <MapLegend layer={layer} rain={rain} soilReady={!!soil} where="below" />
 
           <div className="grid min-w-0 gap-4" aria-live="polite">
             {error && (
@@ -544,5 +547,68 @@ export function SarawakMap({
         </div>
       </Container>
     </TabSection>
+  );
+}
+
+/** Key for the colours on the map, for the layer that is showing. */
+// On a laptop the key sits over the open sea at the top left of the map (Kuching is bottom left);
+// on a phone it goes under the map so it doesn't cover the land.
+function MapLegend({ layer, rain, soilReady, where }: { layer: Layer; rain: MapRain | null; soilReady: boolean; where: "over" | "below" }) {
+  const place =
+    where === "over"
+      ? "absolute left-[52px] top-3 z-[500] hidden w-[260px] md:block"
+      : "-mt-2 w-full md:hidden";
+  const box = `${place} rounded-[12px] border border-white/15 bg-[rgba(8,12,28,.86)] p-3 text-[0.78rem] shadow-[0_8px_30px_rgba(0,0,0,.45)] backdrop-blur-md`;
+  const title = "mb-2 font-semibold text-fg";
+  if (layer === "score") {
+    return (
+      <div className={box} aria-label="Map key: climate score">
+        <p className={title}>Climate score</p>
+        <ul className="grid gap-1.5">
+          {SCORE_BANDS.map((b) => (
+            <li key={b.label} className="flex items-center gap-2">
+              <span className="h-3.5 w-5 flex-none rounded-[4px] border border-white/30" style={{ background: b.color }} aria-hidden="true" />
+              <span className="w-12 flex-none tabular-nums text-fg">{b.label}</span>
+              <span className="text-muted">{b.name}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+    );
+  }
+  const bar = (ramp: typeof RAIN_RAMP, labels: [string, string, string?]) => (
+    <>
+      <div className="h-3 rounded-full border border-white/20" style={{ background: rampCss(ramp) }} aria-hidden="true" />
+      <div className="mt-1.5 flex justify-between text-muted">
+        <span>{labels[0]}</span>
+        {labels[2] && <span>{labels[2]}</span>}
+        <span>{labels[1]}</span>
+      </div>
+    </>
+  );
+  if (layer === "rain") {
+    if (!rain) return null;
+    return (
+      <div className={box} aria-label="Map key: expected rain">
+        <p className={title}>Expected rain, {rain.season.months}</p>
+        {bar(RAIN_RAMP, [`${num(rain.season.min ?? 0)} mm`, `${num(rain.season.max ?? 0)} mm`])}
+      </div>
+    );
+  }
+  if (layer === "recent") {
+    if (!rain?.recent) return null;
+    return (
+      <div className={box} aria-label="Map key: rain in the last 60 days">
+        <p className={title}>Rain, last 60 days vs normal</p>
+        {bar(DRY_WET_RAMP, ["Drier", "Wetter", "Normal"])}
+      </div>
+    );
+  }
+  if (!soilReady) return null;
+  return (
+    <div className={box} aria-label="Map key: soil moisture">
+      <p className={title}>Soil moisture vs usual</p>
+      {bar(DRY_WET_RAMP, ["Drier", "Wetter", "Usual"])}
+    </div>
   );
 }
