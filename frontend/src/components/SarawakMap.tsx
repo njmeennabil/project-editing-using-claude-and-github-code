@@ -556,7 +556,7 @@ export function SarawakMap({
 function MapLegend({ layer, rain, soilReady, where }: { layer: Layer; rain: MapRain | null; soilReady: boolean; where: "over" | "below" }) {
   const place =
     where === "over"
-      ? "absolute left-[52px] top-3 z-[500] hidden w-[260px] md:block"
+      ? "absolute left-[52px] top-3 z-[500] hidden w-[300px] md:block"
       : "-mt-2 w-full md:hidden";
   const box = `${place} rounded-[12px] border border-white/15 bg-[rgba(8,12,28,.86)] p-3 text-[0.78rem] shadow-[0_8px_30px_rgba(0,0,0,.45)] backdrop-blur-md`;
   const title = "mb-2 font-semibold text-fg";
@@ -576,22 +576,19 @@ function MapLegend({ layer, rain, soilReady, where }: { layer: Layer; rain: MapR
       </div>
     );
   }
-  const bar = (ramp: typeof RAIN_RAMP, labels: [string, string, string?]) => (
-    <>
-      <div className="h-3 rounded-full border border-white/20" style={{ background: rampCss(ramp) }} aria-hidden="true" />
-      <div className="mt-1.5 flex justify-between text-muted">
-        <span>{labels[0]}</span>
-        {labels[2] && <span>{labels[2]}</span>}
-        <span>{labels[1]}</span>
-      </div>
-    </>
-  );
   if (layer === "rain") {
     if (!rain) return null;
+    const lo = rain.season.min ?? 0;
+    const hi = rain.season.max ?? lo;
+    const r10 = (v: number) => num(Math.round(v / 10) * 10);
     return (
       <div className={box} aria-label="Map key: expected rain">
-        <p className={title}>Expected rain, {rain.season.months}</p>
-        {bar(RAIN_RAMP, [`${num(rain.season.min ?? 0)} mm`, `${num(rain.season.max ?? 0)} mm`])}
+        <p className={title}>Expected rain, {rain.season.months} (mm)</p>
+        <ColorBar
+          ramp={RAIN_RAMP}
+          ticks={[0, 0.25, 0.5, 0.75, 1].map((t) => [t, r10(lo + (hi - lo) * t)])}
+          caption="Less rain ← → More rain"
+        />
       </div>
     );
   }
@@ -599,16 +596,65 @@ function MapLegend({ layer, rain, soilReady, where }: { layer: Layer; rain: MapR
     if (!rain?.recent) return null;
     return (
       <div className={box} aria-label="Map key: rain in the last 60 days">
-        <p className={title}>Rain, last 60 days vs normal</p>
-        {bar(DRY_WET_RAMP, ["Drier", "Wetter", "Normal"])}
+        <p className={title}>Rain, last 60 days (% of normal)</p>
+        <ColorBar
+          ramp={DRY_WET_RAMP}
+          arrows
+          ticks={[[0, "30%"], [0.25, "65%"], [0.5, "100%"], [0.75, "135%"], [1, "170%"]]}
+          caption="Drier than normal ← → Wetter"
+        />
       </div>
     );
   }
   if (!soilReady) return null;
   return (
     <div className={box} aria-label="Map key: soil moisture">
-      <p className={title}>Soil moisture vs usual</p>
-      {bar(DRY_WET_RAMP, ["Drier", "Wetter", "Usual"])}
+      <p className={title}>Root-zone soil moisture vs usual</p>
+      <ColorBar
+        ramp={DRY_WET_RAMP}
+        arrows
+        ticks={[[0, "Much drier"], [0.25, ""], [0.5, "Usual"], [0.75, ""], [1, "Much wetter"]]}
+        caption="Compared with the usual for this month"
+      />
+    </div>
+  );
+}
+
+/**
+ * A colour scale like a science plot: gradient bar, tick marks with values,
+ * and arrow ends when values beyond the scale use the end colours.
+ */
+function ColorBar({ ramp, ticks, arrows = false, caption }: { ramp: typeof RAIN_RAMP; ticks: [number, string][]; arrows?: boolean; caption: string }) {
+  const end = (c: number[]) => `rgb(${c.join(",")})`;
+  const first = ramp[0][1];
+  const last = ramp[ramp.length - 1][1];
+  return (
+    <div aria-hidden="true">
+      <div className="flex items-center">
+        {arrows && (
+          <span className="h-0 w-0 border-y-[7px] border-r-[10px] border-y-transparent" style={{ borderRightColor: end(first) }} />
+        )}
+        <div className="relative h-3.5 flex-1 border border-white/50" style={{ background: rampCss(ramp) }}>
+          {ticks.map(([t]) => (
+            <span key={t} className="absolute -bottom-[5px] h-[5px] w-px bg-white/70" style={{ left: `${t * 100}%` }} />
+          ))}
+        </div>
+        {arrows && (
+          <span className="h-0 w-0 border-y-[7px] border-l-[10px] border-y-transparent" style={{ borderLeftColor: end(last) }} />
+        )}
+      </div>
+      <div className={`relative mt-[7px] h-4 ${arrows ? "mx-[10px]" : ""}`}>
+        {ticks.map(([t, label], i) => (
+          <span
+            key={t}
+            className="absolute whitespace-nowrap text-[0.68rem] tabular-nums text-fg"
+            style={{ left: `${t * 100}%`, transform: i === 0 ? "translateX(-15%)" : i === ticks.length - 1 ? "translateX(-85%)" : "translateX(-50%)" }}
+          >
+            {label}
+          </span>
+        ))}
+      </div>
+      <p className="mt-1 text-center text-[0.7rem] text-muted">{caption}</p>
     </div>
   );
 }
