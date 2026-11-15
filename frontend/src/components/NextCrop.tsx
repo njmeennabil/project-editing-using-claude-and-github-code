@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { ApiError, planNextCrop } from "@/lib/api";
 import { DEFAULT_PLAN } from "@/lib/defaults";
-import { num } from "@/lib/format";
+import { num, soilSentence } from "@/lib/format";
 import { locateMe, niceDate } from "@/lib/geo";
 import type { Crop, MapPlace, Place, PlanInput, PlanOption, PlanResponse } from "@/lib/types";
 import { Container, Eyebrow, Panel, SectionTitle } from "./Container";
@@ -95,7 +95,7 @@ function OptionCard({
           <Bar label="Rotation" value={o.breakdown.rotation} max={o.max.rotation} />
           <Bar label="Soil pH" value={o.breakdown.soil} max={o.max.soil} />
           {o.breakdown.current != null && o.max.current != null && (
-            <Bar label="Recent rain" value={o.breakdown.current} max={o.max.current} />
+            <Bar label="Current conditions" value={o.breakdown.current} max={o.max.current} />
           )}
         </div>
       </div>
@@ -353,6 +353,12 @@ export function NextCrop({
                     ({num(data.recent.normal_mm)} mm). <span className="text-muted">NASA GPM IMERG, last {data.recent.days} days.</span>
                   </p>
                 )}
+                {data.soil_moisture && (
+                  <p className="-mt-2 rounded-[12px] border border-line bg-surface px-4 py-3 text-[0.9rem]">
+                    <strong>Soil moisture this week ({niceDate(data.soil_moisture.start)} – {niceDate(data.soil_moisture.end)}):</strong>{" "}
+                    {soilSentence(data.soil_moisture)}. <span className="text-muted">NASA SMAP Level 4, about 9 km.</span>
+                  </p>
+                )}
 
                 <h3 className="font-display text-[1.3rem] font-semibold">
                   Top 3 crops to plant after {t.current.name.toLowerCase()} in {placeName}
@@ -385,8 +391,8 @@ export function NextCrop({
 
                 <p className="text-[0.82rem] text-muted">
                   Scores are a guide, not a guarantee: climate fit 40 points (temperature from NASA POWER, rainfall from NASA
-                  GPM where available, for the next crop&apos;s own season), rotation 30, soil pH 15, and recent rain 15 (last
-                  60 days of NASA GPM rainfall against normal). A poor rotation is never shown as recommended.
+                  GPM where available, for the next crop&apos;s own season), rotation 30, soil pH 15, and current conditions 15
+                  (the last 60 days of NASA GPM rain and this week&apos;s NASA SMAP soil moisture, each against what is usual). A poor rotation is never shown as recommended.
                 </p>
               </div>
             ) : (

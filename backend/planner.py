@@ -3,7 +3,8 @@
     Climate fit   40 points  temperature (20, NASA POWER) and rainfall (20, NASA GPM) over the next crop's own season
     Rotation      30 points  from the rotation ratings: Excellent 30 · Good 22 · Fair 14 · Poor 4
     Soil pH       15 points  full inside the crop's range, 7.5 points less per pH unit outside
-    Recent rain   15 points  last 60 days of NASA GPM rainfall against normal (same for every crop)
+    Current       15 points  last 60 days of NASA GPM rain (7.5) and this week's NASA SMAP root-zone
+                             soil moisture (7.5), each against what is usual; same for every crop
 
 The score is a guidance index, not a guarantee. A Poor rotation caps the verdict at
 "Possible with care" (the score itself is unchanged), so a repeat crop is never "Recommended".
@@ -88,7 +89,33 @@ def current_points(recent):
         f"{summary}, {pct}% wetter than normal. Check drainage before planting."
 
 
-def plan(data, current_code, planted, climate, place, ph, irrigation=0.0, prep_days=DEFAULT_PREP_DAYS, recent=None):
+def soil_moisture_points(sm, max_points=CURRENT_MAX / 2):
+    """Points for this week's root-zone soil moisture against the usual for the month (None = no data)."""
+    if not sm or sm.get("z") is None:
+        return None, None
+    z = sm["z"]
+    note = (f"Soil moisture this week (root zone, NASA SMAP): {sm['rootzone_pct']:.0f}%, {sm['label']} "
+            f"(usual {sm['usual_rootzone_pct']:.0f}%).")
+    if abs(z) <= 0.4:
+        return max_points, note
+    if z < 0:
+        return max_points * max(0.0, 1 - (-z - 0.4) / 2.6), note + " Water the seedbed before planting."
+    return max(max_points * 0.45, max_points - (z - 0.4) * max_points * 0.4), note + " Allow the soil to drain before planting."
+
+
+def conditions_points(recent, sm):
+    """Current conditions (15): GPM recent rain and SMAP soil moisture, half each when both exist."""
+    rain_pts, rain_note = current_points(recent)
+    soil_pts, soil_note = soil_moisture_points(sm)
+    if soil_pts is None:
+        return rain_pts, [rain_note]
+    if not recent:
+        return soil_pts * 2, [soil_note]
+    return rain_pts / 2 + soil_pts, [rain_note, soil_note]
+
+
+def plan(data, current_code, planted, climate, place, ph, irrigation=0.0, prep_days=DEFAULT_PREP_DAYS, recent=None,
+         soil_moisture=None):
     crops = data["crops"]
     by_code = {c["code"]: c for c in crops}
     current = by_code[current_code]
@@ -98,7 +125,7 @@ def plan(data, current_code, planted, climate, place, ph, irrigation=0.0, prep_d
     harvest = planted + timedelta(days=grow_days)
     next_start = harvest + timedelta(days=prep_days)
 
-    cp, c_note = current_points(recent)
+    cp, c_notes = conditions_points(recent, soil_moisture)
     options = []
     for c in crops:
         days, assumed = nasa_power.crop_season_days(c)
@@ -122,7 +149,7 @@ def plan(data, current_code, planted, climate, place, ph, irrigation=0.0, prep_d
             "max": {"climate": 40, "rotation": 30, "soil": 15, "current": 15},
             "rotation": {"rating": rot["label"], "reason": rot["reason"], "verified": rot["verified"], "source": rot["source"]},
             "season": {**sea, "days": days, "days_assumed": assumed, "irrigation_mm": irrigation, "water_mm": water},
-            "notes": [t_note, w_note, s_note, c_note],
+            "notes": [t_note, w_note, s_note, *c_notes],
             "_order": c["id"],
         })
     options.sort(key=lambda o: (-o["score"], o["_order"]))
@@ -141,6 +168,7 @@ def plan(data, current_code, planted, climate, place, ph, irrigation=0.0, prep_d
         },
         "location": place,
         "recent": recent,
+        "soil_moisture": soil_moisture,
         "recommendations": options[:3],
         "others": options[3:],
     }

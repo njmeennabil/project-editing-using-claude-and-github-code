@@ -8,6 +8,7 @@ Endpoints
     POST /api/rotation/plan  {"current": "JAGUNG", "planted": "2026-03-02", "location": "KUCHING", "ph": 6.2}
          scores the 5 crops 0–100 for the next season and returns the top 3
     GET  /api/map/rain?crop=JAGUNG&planted=2026-03-02   GPM rainfall grid (season total, last 60 days vs normal)
+    GET  /api/map/soil                SMAP soil moisture grid this week, compared with usual
     GET  /api/map/suitability?crop=JAGUNG&planted=2026-03-02[&lat=&lon=][&irrigation=]
          climate suitability (0–100) of one crop in all 12 Sarawak divisions, plus an optional map point
     GET  /api/locations              Sarawak divisions with NASA climate data
@@ -40,6 +41,7 @@ from crop_data import DEFAULT_DB, load_data  # noqa: E402
 import gpm  # noqa: E402
 import nasa_power  # noqa: E402
 import planner  # noqa: E402
+import smap  # noqa: E402
 import rules  # noqa: E402
 from locations import BY_CODE, SARAWAK_DIVISIONS  # noqa: E402
 
@@ -174,6 +176,7 @@ def create_app():
             source=POWER_SOURCE,
             acknowledgement=nasa_power._saved.get("acknowledgement"),
             gpm=gpm.describe(),
+            smap=smap.describe(),
         )
 
     @app.get("/api/climate")
@@ -269,6 +272,21 @@ def create_app():
             acknowledgement=GPM_ACK,
         )
 
+    @app.get("/api/map/soil")
+    def map_soil():
+        """SMAP root-zone soil moisture this week, and how it compares with the usual for the month."""
+        d = smap.data()
+        if not d or not d.get("recent"):
+            return jsonify(available=False, error="SMAP soil moisture data is not available yet."), 404
+        r, n = d["recent"], d["normals"]
+        m = date.fromisoformat(r["end"]).month - 1
+        z = [[None if v is None or mu is None or not sd else round(smap.effective_z((v - mu) / sd, (v - mu) * 100), 2)
+              for v, mu, sd in zip(row, n["rootzone"][m][j], n["rootzone_std"][m][j])]
+             for j, row in enumerate(r["rootzone"])]
+        return jsonify(available=True, grid={"lat": d["grid"]["lat"], "lon": d["grid"]["lon"]},
+                       start=r["start"], end=r["end"], rootzone=r["rootzone"], z=z,
+                       normals_period=n["period"], source="NASA SMAP L4 (SPL4SMGP)", acknowledgement=d.get("acknowledgement"))
+
     @app.route("/api/rotation/plan", methods=["GET", "POST"])
     def rotation_plan():
         src = (request.get_json(silent=True) or {}) if request.method == "POST" else request.args
@@ -289,7 +307,8 @@ def create_app():
             raise BadInput("Choose a location in Sarawak, or use your GPS location.")
 
         recent = gpm.recent_at(place["lat"], place["lon"])
-        result = planner.plan(data, current, planted, clim, place, ph, irrigation, prep_days, recent)
+        sm = smap.at(place["lat"], place["lon"])
+        result = planner.plan(data, current, planted, clim, place, ph, irrigation, prep_days, recent, sm)
         return jsonify(
             input={"current": current, "planted": planted.isoformat(), "ph": ph, "irrigation": irrigation,
                    "prep_days": prep_days},
@@ -349,6 +368,7 @@ def create_app():
         return jsonify(
             input={"ph": ph, "temp": None, "water": None, "crop": crop_code,
                    "climate": {"source": gpm.source_label(clim), "period": gpm.period_label(clim), "location": place,
+                               "soil_moisture": smap.at(place["lat"], place["lon"]),
                                "month": month, "month_name": nasa_power.MONTH_NAMES[month - 1],
                                "irrigation": irrigation}},
             counts=counts,

@@ -3,37 +3,47 @@
 import "leaflet/dist/leaflet.css";
 import type * as Leaflet from "leaflet";
 import { useEffect, useRef, useState } from "react";
-import { ApiError, getMapRain, getMapSuitability } from "@/lib/api";
+import { ApiError, getMapRain, getMapSoil, getMapSuitability } from "@/lib/api";
 import { DEFAULT_PLAN } from "@/lib/defaults";
 import { num } from "@/lib/format";
-import type { Crop, MapRain, MapScore, MapSuitability, Place } from "@/lib/types";
+import type { Crop, MapRain, MapScore, MapSoil, MapSuitability, Place } from "@/lib/types";
 import { Container, Eyebrow, SectionTitle } from "./Container";
 import { FieldShell, SelectField } from "./FieldCheck";
 import { ScoreRing, VerdictPill } from "./NextCrop";
 
 export type MapTarget = "check" | "plan";
-type Layer = "score" | "rain" | "recent";
+type Layer = "score" | "rain" | "recent" | "soil";
 
 type GeoFeature = { geometry: { type: string; coordinates: number[][][] | number[][][][] } };
 
-/** Draw a GPM grid as a smooth greyscale picture, clipped to Sarawak. Darker = more rain. */
-function rainImage(rain: MapRain, layer: "rain" | "recent", fg: string, features: GeoFeature[]) {
-  const g = rain.grid;
-  const values = layer === "rain" ? rain.season.total_mm : rain.recent?.ratio ?? [];
-  const lo = layer === "rain" ? rain.season.min ?? 0 : 0.3;
-  const hi = layer === "rain" ? rain.season.max ?? 1 : 1.7;
+interface GridSpec {
+  values: (number | null)[][];
+  nrows: number;
+  ncols: number;
+  northFirst: boolean; // row 0 is the northern edge
+  lo: number;
+  hi: number;
+  south: number;
+  north: number;
+  west: number;
+  east: number;
+}
+
+/** Draw a data grid as a smooth greyscale picture, clipped to Sarawak. Darker = more water. */
+function gridImage(spec: GridSpec, fg: string, features: GeoFeature[]) {
   const small = document.createElement("canvas");
-  small.width = g.nlon;
-  small.height = g.nlat;
+  small.width = spec.ncols;
+  small.height = spec.nrows;
   const sc = small.getContext("2d")!;
-  const img = sc.createImageData(g.nlon, g.nlat);
+  const img = sc.createImageData(spec.ncols, spec.nrows);
   const [r, gg, b] = (fg.match(/[0-9a-f]{2}/gi) ?? ["0a", "0a", "0a"]).map((h) => parseInt(h, 16));
-  for (let j = 0; j < g.nlat; j++) {
-    for (let i = 0; i < g.nlon; i++) {
-      const v = values[j]?.[i];
-      const k = ((g.nlat - 1 - j) * g.nlon + i) * 4;
+  for (let j = 0; j < spec.nrows; j++) {
+    for (let i = 0; i < spec.ncols; i++) {
+      const v = spec.values[j]?.[i];
       if (v == null) continue;
-      const t = Math.max(0, Math.min(1, (v - lo) / (hi - lo || 1)));
+      const row = spec.northFirst ? j : spec.nrows - 1 - j;
+      const k = (row * spec.ncols + i) * 4;
+      const t = Math.max(0, Math.min(1, (v - spec.lo) / (spec.hi - spec.lo || 1)));
       img.data[k] = r;
       img.data[k + 1] = gg;
       img.data[k + 2] = b;
@@ -43,12 +53,11 @@ function rainImage(rain: MapRain, layer: "rain" | "recent", fg: string, features
   sc.putImageData(img, 0, 0);
   const scale = 10;
   const big = document.createElement("canvas");
-  big.width = g.nlon * scale;
-  big.height = g.nlat * scale;
+  big.width = spec.ncols * scale;
+  big.height = spec.nrows * scale;
   const bc = big.getContext("2d")!;
-  const west = g.lon0 - g.step / 2, north = g.lat0 - g.step / 2 + g.nlat * g.step;
-  const px = (lon: number) => ((lon - west) / (g.nlon * g.step)) * big.width;
-  const py = (lat: number) => ((north - lat) / (g.nlat * g.step)) * big.height;
+  const px = (lon: number) => ((lon - spec.west) / (spec.east - spec.west)) * big.width;
+  const py = (lat: number) => ((spec.north - lat) / (spec.north - spec.south)) * big.height;
   bc.beginPath();
   for (const f of features) {
     const polys = (f.geometry.type === "Polygon" ? [f.geometry.coordinates] : f.geometry.coordinates) as number[][][][];
@@ -62,8 +71,44 @@ function rainImage(rain: MapRain, layer: "rain" | "recent", fg: string, features
   bc.clip("evenodd");
   bc.imageSmoothingEnabled = true;
   bc.drawImage(small, 0, 0, big.width, big.height);
-  const south = g.lat0 - g.step / 2, east = west + g.nlon * g.step;
-  return { url: big.toDataURL("image/png"), bounds: [[south, west], [north, east]] as [[number, number], [number, number]] };
+  return {
+    url: big.toDataURL("image/png"),
+    bounds: [[spec.south, spec.west], [spec.north, spec.east]] as [[number, number], [number, number]],
+  };
+}
+
+function rainSpec(rain: MapRain, layer: "rain" | "recent"): GridSpec {
+  const g = rain.grid;
+  const west = g.lon0 - g.step / 2, south = g.lat0 - g.step / 2;
+  return {
+    values: layer === "rain" ? rain.season.total_mm : rain.recent?.ratio ?? [],
+    nrows: g.nlat,
+    ncols: g.nlon,
+    northFirst: false,
+    lo: layer === "rain" ? rain.season.min ?? 0 : 0.3,
+    hi: layer === "rain" ? rain.season.max ?? 1 : 1.7,
+    south,
+    north: south + g.nlat * g.step,
+    west,
+    east: west + g.nlon * g.step,
+  };
+}
+
+function soilSpec(soil: MapSoil): GridSpec {
+  const { lat, lon } = soil.grid;
+  const dLat = Math.abs(lat[0] - lat[1]) / 2, dLon = Math.abs(lon[1] - lon[0]) / 2;
+  return {
+    values: soil.z,
+    nrows: lat.length,
+    ncols: lon.length,
+    northFirst: true,
+    lo: -2,
+    hi: 2,
+    south: lat[lat.length - 1] - dLat,
+    north: lat[0] + dLat,
+    west: lon[0] - dLon,
+    east: lon[lon.length - 1] + dLon,
+  };
 }
 
 const CARTO_KEY = process.env.NEXT_PUBLIC_CARTO_KEY || "";
@@ -131,6 +176,7 @@ export function SarawakMap({
   const [layer, setLayer] = useState<Layer>("score");
   const [rain, setRain] = useState<MapRain | null>(null);
   const [rainError, setRainError] = useState<string | null>(null);
+  const [soil, setSoil] = useState<MapSoil | null>(null);
 
   // Create the map once (Leaflet needs the browser, so it is loaded here).
   useEffect(() => {
@@ -240,11 +286,12 @@ export function SarawakMap({
     const ctrl = new AbortController();
     const t = setTimeout(async () => {
       try {
-        setRain(await getMapRain({ crop, planted }, ctrl.signal));
+        if (layer === "soil") setSoil(await getMapSoil(ctrl.signal));
+        else setRain(await getMapRain({ crop, planted }, ctrl.signal));
         setRainError(null);
       } catch (e) {
         if (ctrl.signal.aborted) return;
-        setRainError(e instanceof ApiError ? e.message : "Rainfall shading could not be loaded.");
+        setRainError(e instanceof ApiError ? e.message : "This shading could not be loaded.");
       }
     }, 300);
     return () => {
@@ -260,12 +307,15 @@ export function SarawakMap({
     if (!ready || !lib || !m) return;
     rainLayer.current?.remove();
     rainLayer.current = null;
-    if (layer === "score" || !rain) return;
-    if (layer === "recent" && !rain.recent) return;
+    if (layer === "score") return;
+    let spec: GridSpec | null = null;
+    if (layer === "soil") spec = soil ? soilSpec(soil) : null;
+    else if (rain && (layer === "rain" || rain.recent)) spec = rainSpec(rain, layer);
+    if (!spec) return;
     const fg = getComputedStyle(document.documentElement).getPropertyValue("--fg").trim() || "#0a0a0a";
-    const pic = rainImage(rain, layer, fg, features.current);
+    const pic = gridImage(spec, fg, features.current);
     rainLayer.current = lib.imageOverlay(pic.url, pic.bounds, { opacity: 0.85, interactive: false }).addTo(m);
-  }, [ready, layer, rain]);
+  }, [ready, layer, rain, soil]);
 
   // Paint scores and the selection onto the map.
   useEffect(() => {
@@ -355,11 +405,12 @@ export function SarawakMap({
 
         <div className="mb-4 grid gap-1.5">
           <span className="text-[0.92rem] font-semibold" id="map-layer-label">Shading</span>
-          <div role="radiogroup" aria-labelledby="map-layer-label" className="grid max-w-[620px] grid-cols-3 rounded-[10px] border border-line bg-bg p-1">
+          <div role="radiogroup" aria-labelledby="map-layer-label" className="grid max-w-[720px] grid-cols-2 rounded-[10px] border border-line bg-bg p-1 sm:grid-cols-4">
             {([
               ["score", "Climate score"],
               ["rain", "Expected rain"],
               ["recent", "Last 60 days"],
+              ["soil", "Soil moisture"],
             ] as const).map(([value, label]) => (
               <button
                 key={value}
@@ -380,9 +431,13 @@ export function SarawakMap({
                 ? rain
                   ? `NASA GPM: normal rain over the ${rain.crop.name.toLowerCase()} season (${rain.season.months}, ${rain.season.days} days) from ${rain.normals_period}, about 10 km detail. Lighter ≈ ${num(rain.season.min ?? 0)} mm, darker ≈ ${num(rain.season.max ?? 0)} mm.`
                   : "Loading NASA GPM rainfall…"
-                : rain?.recent
-                  ? `NASA GPM: rain from ${rain.recent.start} to ${rain.recent.end} compared with normal. Lighter = drier than normal, darker = wetter.`
-                  : "Loading NASA GPM rainfall…"}
+                : layer === "recent"
+                  ? rain?.recent
+                    ? `NASA GPM: rain from ${rain.recent.start} to ${rain.recent.end} compared with normal. Lighter = drier than normal, darker = wetter.`
+                    : "Loading NASA GPM rainfall…"
+                  : soil
+                    ? `NASA SMAP: root-zone soil moisture ${soil.start} to ${soil.end} compared with the usual for this month (${soil.normals_period}), about 9 km. Lighter = drier than usual, darker = wetter.`
+                    : "Loading NASA SMAP soil moisture…"}
             {rainError && layer !== "score" ? ` ${rainError}` : ""}
           </span>
         </div>

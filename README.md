@@ -53,6 +53,13 @@ Contoh: jagung (65 hari) yang ditanam pada bulan Mac di Kuching dapat ~614 mm hu
 - Markah *Next crop*: iklim 40, giliran 30, pH 15, **hujan terkini 15**.
 - Peta: lapisan *Expected rain* dan *Last 60 days*.
 
+### Kelembapan tanah NASA SMAP (fasa 4)
+- Kelembapan tanah minggu ini (zon akar, 0–100 cm) daripada **NASA SMAP Level 4** (~9 km), dibandingkan dengan
+  biasa bagi bulan itu (2016–2025). Dikemas kini dalam larian mingguan yang sama, dengan token yang sama.
+- *Field check* dan *Next crop* tunjuk baris kelembapan tanah; markah *Next crop* bahagian
+  **Current conditions** (15) = hujan 60 hari GPM + kelembapan tanah SMAP.
+- Peta: lapisan *Soil moisture*.
+
 | Folder | Isi |
 |---|---|
 | [`frontend/`](frontend/) | Website BUMI360 (Next.js 16, React 19, Tailwind 4) |

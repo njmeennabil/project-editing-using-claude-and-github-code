@@ -65,6 +65,7 @@ export interface CheckResponse {
       month: number;
       month_name: string;
       irrigation: number;
+      soil_moisture?: SoilMoisture | null;
     } | null;
   };
   counts: Record<OverallStatus, number>;
@@ -209,6 +210,7 @@ export interface PlanResponse {
   climate: { source: string; period: string | null };
   location: Place;
   recent: RecentRain | null;
+  soil_moisture?: SoilMoisture | null;
   timeline: {
     current: { code: string; name: string; local_name: string };
     planted: string;
@@ -265,6 +267,29 @@ export interface MapRain {
   crop: { code: string; name: string };
   season: { planted: string; days: number; months: string; total_mm: (number | null)[][]; min: number | null; max: number | null };
   recent: { start: string; end: string; days: number; ratio: (number | null)[][] } | null;
+  normals_period: string;
+  source: string;
+}
+
+export interface SoilMoisture {
+  start: string;
+  end: string;
+  days: number;
+  rootzone_pct: number;
+  surface_pct: number | null;
+  usual_rootzone_pct: number | null;
+  z: number | null;
+  label: string;
+  normals_period: string;
+}
+
+export interface MapSoil {
+  available: boolean;
+  grid: { lat: number[]; lon: number[] };
+  start: string;
+  end: string;
+  rootzone: (number | null)[][];
+  z: (number | null)[][];
   normals_period: string;
   source: string;
 }

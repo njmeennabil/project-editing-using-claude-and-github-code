@@ -25,6 +25,7 @@ python3 -m venv .venv
 | GET | `/api/climate?location=KUCHING` | Monthly NASA POWER temperature and rainfall (or `?lat=&lon=`) |
 | GET / POST | `/api/rotation/plan` | Next-crop planner: `current` (crop code), `planted` (YYYY-MM-DD), `location` (or `lat`/`lon`), `ph`, optional `prep_days` (default 14) and `irrigation`. Scores all 5 crops 0–100 and returns the top 3 |
 | GET | `/api/map/rain?crop=&planted=` | NASA GPM rainfall grid for the map: expected rain over the crop's season, and the last 60 days against normal |
+| GET | `/api/map/soil` | NASA SMAP root-zone soil moisture this week, compared with the usual for the month |
 | GET / POST | `/api/check` | Suitability. Either `ph`, `temp`, `water`, or `ph`, `location` (or `lat`/`lon`), `month`, `irrigation`. Optional `crop` (`all` or a code) |
 
 Example:
@@ -81,7 +82,7 @@ NASA Earth Science/Applied Science Program.
 | Climate fit | 40 | Temperature 20 (−4 per °C outside the best range) + water 20 (shortfall in proportion; excess down to 40%; 16 for crops with no mm figure) |
 | Rotation | 30 | `penilaian_giliran` table: Excellent 30 · Good 22 · Fair 14 · Poor 4 |
 | Soil pH | 15 | −7.5 per pH unit outside the range; 0 below a danger level |
-| Recent rain | 15 | Last 60 days of GPM rain ÷ normal: full points from 0.8 to 1.3; less when drier or much wetter; 11 if no data |
+| Current conditions | 15 | Half from the last 60 days of GPM rain ÷ normal (full from 0.8 to 1.3), half from this week's SMAP root-zone soil moisture against the usual for the month (full within ±0.4 standard deviations). If one is missing, the other counts for all 15 |
 
 A Poor rotation caps the verdict at "Possible with care". Most rotation ratings are drafts
 (`disahkan = 0` in the database) awaiting expert review.
@@ -101,3 +102,11 @@ A check over July–September 2025 found IMERG Late within about ±7% of IMERG F
 a new token at urs.earthdata.nasa.gov and replace the `EARTHDATA_TOKEN` secret.
 
 GPM IMERG data provided by NASA Goddard Earth Sciences Data and Information Services Center (GES DISC).
+
+## NASA SMAP soil moisture (`smap.py`)
+
+`data/smap_sarawak.json` holds SMAP Level 4 (`SPL4SMGP` v008, 9 km) surface (0–5 cm) and root-zone
+(0–100 cm) soil moisture for the Sarawak block of the EASE-Grid 2.0 (rows 739–800, columns 3100–3168):
+monthly normals and spread for 2016–2025 (four sample days a month at 14:00 Sarawak time) and the mean of
+the last 7 days. Built by `scripts/update_smap.py` in the same weekly workflow, with the same token.
+SMAP Level 4 data provided by the NASA National Snow and Ice Data Center DAAC (NSIDC DAAC).
