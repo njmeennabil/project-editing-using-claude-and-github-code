@@ -53,18 +53,36 @@ def _mean(grid, cells):
     return sum(vals) / len(vals) if vals else None
 
 
-def label(z):
+SAME_PCT = 2.0    # within 2 percentage points of usual = "about usual", whatever the statistics say
+MUCH_PCT = 5.0    # "much drier/wetter" needs at least 5 points of difference as well
+
+
+def effective_z(z, diff_pct):
+    """How unusual this week is, ignoring differences too small to matter on a farm.
+
+    Sarawak's soils change little from year to year, so a 2-point difference can look
+    statistically large. Differences under SAME_PCT count as usual; the result is capped at ±3.
+    """
+    if z is None or diff_pct is None:
+        return None
+    if abs(diff_pct) < SAME_PCT:
+        return 0.0
+    return max(-3.0, min(3.0, z))
+
+
+def label(z, diff_pct=None):
     if z is None:
         return "no usual value to compare with"
+    big = diff_pct is None or abs(diff_pct) >= MUCH_PCT
     if z <= -1.0:
-        return "much drier than usual"
+        return "much drier than usual" if big else "drier than usual"
     if z < -0.4:
         return "drier than usual"
     if z <= 0.4:
         return "about usual"
     if z < 1.0:
         return "wetter than usual"
-    return "much wetter than usual"
+    return "much wetter than usual" if big else "wetter than usual"
 
 
 def at(lat, lon):
@@ -80,13 +98,16 @@ def at(lat, lon):
     m = date.fromisoformat(r["end"]).month - 1
     usual, spread = _mean(n["rootzone"][m], cells), _mean(n["rootzone_std"][m], cells)
     z = None if usual is None or not spread else (root - usual) / spread
+    diff = None if usual is None else (root - usual) * 100
+    z = effective_z(z, diff)
     return {
         "start": r["start"], "end": r["end"], "days": r["days"],
         "rootzone_pct": round(root * 100, 1),
         "surface_pct": None if surf is None else round(surf * 100, 1),
         "usual_rootzone_pct": None if usual is None else round(usual * 100, 1),
         "z": None if z is None else round(z, 2),
-        "label": label(z),
+        "difference_pct": None if diff is None else round(diff, 1),
+        "label": label(z, diff),
         "normals_period": n["period"],
     }
 

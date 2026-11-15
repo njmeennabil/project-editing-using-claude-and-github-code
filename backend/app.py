@@ -280,7 +280,7 @@ def create_app():
             return jsonify(available=False, error="SMAP soil moisture data is not available yet."), 404
         r, n = d["recent"], d["normals"]
         m = date.fromisoformat(r["end"]).month - 1
-        z = [[None if v is None or mu is None or not sd else round((v - mu) / sd, 2)
+        z = [[None if v is None or mu is None or not sd else round(smap.effective_z((v - mu) / sd, (v - mu) * 100), 2)
               for v, mu, sd in zip(row, n["rootzone"][m][j], n["rootzone_std"][m][j])]
              for j, row in enumerate(r["rootzone"])]
         return jsonify(available=True, grid={"lat": d["grid"]["lat"], "lon": d["grid"]["lon"]},

@@ -99,7 +99,7 @@ def soil_moisture_points(sm, max_points=CURRENT_MAX / 2):
     if abs(z) <= 0.4:
         return max_points, note
     if z < 0:
-        return max_points * max(0.0, 1 - (-z - 0.4) / 1.6), note + " Water the seedbed before planting."
+        return max_points * max(0.0, 1 - (-z - 0.4) / 2.6), note + " Water the seedbed before planting."
     return max(max_points * 0.45, max_points - (z - 0.4) * max_points * 0.4), note + " Allow the soil to drain before planting."
 
 

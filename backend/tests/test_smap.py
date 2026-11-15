@@ -40,10 +40,12 @@ def test_point_value_and_label():
 
 def test_soil_points_and_combination():
     usual = {"z": 0.0, "rootzone_pct": 40, "usual_rootzone_pct": 40, "label": "about usual"}
-    dry = {"z": -2.0, "rootzone_pct": 30, "usual_rootzone_pct": 40, "label": "much drier than usual"}
+    dry = {"z": -3.0, "rootzone_pct": 30, "usual_rootzone_pct": 40, "label": "much drier than usual"}
+    drier = {"z": -1.9, "rootzone_pct": 37, "usual_rootzone_pct": 40, "label": "drier than usual"}
     wet = {"z": 2.0, "rootzone_pct": 50, "usual_rootzone_pct": 40, "label": "much wetter than usual"}
     assert planner.soil_moisture_points(usual)[0] == 7.5
     assert planner.soil_moisture_points(dry)[0] == 0.0 and "Water the seedbed" in planner.soil_moisture_points(dry)[1]
+    assert planner.soil_moisture_points(drier)[0] == pytest.approx(7.5 * (1 - 1.5 / 2.6))
     assert planner.soil_moisture_points(wet)[0] == pytest.approx(7.5 * 0.45)   # wet soil never drops below 45 %
     rain_ok = {"ratio": 1.0, "days": 60, "total_mm": 600, "normal_mm": 600}
     pts, notes = planner.conditions_points(rain_ok, usual)
@@ -68,3 +70,12 @@ def test_soil_map():
     assert d["available"] and len(d["z"]) == 62 and len(d["z"][0]) == 69 and d["z"][3][3] == -2.0
     smap.set_data(None)
     assert create_app().test_client().get("/api/map/soil").status_code == 404
+
+
+def test_small_differences_count_as_usual():
+    smap.set_data(fake_smap(now=0.385, usual=0.40, spread=0.005))     # 1.5 points below, z = -3
+    v = smap.at(1.553, 110.359)
+    assert v["z"] == 0.0 and v["label"] == "about usual"
+    smap.set_data(fake_smap(now=0.37, usual=0.40, spread=0.005))      # 3 points below: drier, not "much"
+    v = smap.at(1.553, 110.359)
+    assert v["z"] == -3.0 and v["label"] == "drier than usual"
