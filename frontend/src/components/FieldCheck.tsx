@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { ApiError, checkField } from "@/lib/api";
 import { DEFAULT_INPUT, MONTHS } from "@/lib/defaults";
 import { num } from "@/lib/format";
-import type { CheckResponse, ClimateMode, Crop, FieldInput, Place } from "@/lib/types";
+import type { CheckResponse, ClimateMode, Crop, FieldInput, MapPlace, Place } from "@/lib/types";
 import { Container, Eyebrow, Panel, SectionTitle } from "./Container";
 import { ResultCard } from "./ResultCard";
 import { StatusPill } from "./Status";
@@ -31,11 +31,15 @@ export function FieldCheck({
   locations,
   initialCheck,
   onViewGuide,
+  mapPlace = null,
+  onPickOnMap,
 }: {
   crops: Crop[];
   locations: Place[];
   initialCheck: CheckResponse | null;
   onViewGuide: (code: string) => void;
+  mapPlace?: MapPlace | null;
+  onPickOnMap?: () => void;
 }) {
   const [form, setForm] = useState<FieldInput>(DEFAULT_INPUT);
   const [restored, setRestored] = useState(false);
@@ -55,6 +59,17 @@ export function FieldCheck({
     }, 0);
     return () => clearTimeout(t);
   }, []);
+
+  // A place chosen on the map
+  useEffect(() => {
+    if (!mapPlace) return;
+    const t = setTimeout(() => {
+      setGps({ state: "idle" });
+      setForm((f) => ({ ...f, mode: "nasa", location: mapPlace.location, lat: mapPlace.lat, lon: mapPlace.lon }));
+      document.getElementById("check")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 80);
+    return () => clearTimeout(t);
+  }, [mapPlace]);
 
   const waitingForGps = form.mode === "nasa" && form.location === "GPS" && (!form.lat || !form.lon);
 
@@ -97,6 +112,10 @@ export function FieldCheck({
 
   function onLocationChange(e: React.ChangeEvent<HTMLSelectElement>) {
     const value = e.target.value;
+    if (value === "PICK") {
+      onPickOnMap?.();
+      return;
+    }
     if (value !== "GPS") {
       setGps({ state: "idle" });
       setForm((f) => ({ ...f, location: value }));
@@ -212,7 +231,9 @@ export function FieldCheck({
                             ? gps.message!
                             : form.location === "GPS"
                               ? `Using your location: ${form.lat}, ${form.lon}`
-                              : "Division, or use your phone's location"
+                              : form.location === "MAP"
+                            ? `Using the map point: ${form.lat}, ${form.lon}`
+                            : "Division, GPS, or a point on the map"
                       }
                       hintAlert={gps.state === "error"}
                     >
@@ -220,6 +241,8 @@ export function FieldCheck({
                         <option key={l.code} value={l.code}>{l.name}</option>
                       ))}
                       <option value="GPS">Use my location (GPS)</option>
+                      {form.location === "MAP" && <option value="MAP">Point chosen on map</option>}
+                      <option value="PICK">Choose on map…</option>
                     </SelectField>
                     <SelectField id="month" label="Planting month" value={form.month} onChange={set("month")} hint="The season starts on the 1st of this month">
                       {MONTHS.map((m, i) => (

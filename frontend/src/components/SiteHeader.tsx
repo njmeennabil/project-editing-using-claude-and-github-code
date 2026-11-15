@@ -18,7 +18,7 @@ export function SiteHeader() {
 
         <button
           type="button"
-          className="grid h-11 w-11 place-items-center rounded-[10px] border border-line bg-surface md:hidden"
+          className="grid h-11 w-11 place-items-center rounded-[10px] border border-line bg-surface lg:hidden"
           aria-expanded={open}
           aria-controls="site-nav"
           onClick={() => setOpen((o) => !o)}
@@ -32,14 +32,14 @@ export function SiteHeader() {
         <nav
           id="site-nav"
           aria-label="Main"
-          className={`${open ? "flex" : "hidden"} absolute inset-x-0 top-full flex-col gap-0.5 border-b border-line bg-surface px-4 pb-3.5 pt-2 shadow-md md:static md:flex md:flex-row md:gap-1 md:border-0 md:bg-transparent md:p-0 md:shadow-none`}
+          className={`${open ? "flex" : "hidden"} absolute inset-x-0 top-full flex-col gap-0.5 border-b border-line bg-surface px-4 pb-3.5 pt-2 shadow-md lg:static lg:flex lg:flex-row lg:gap-1 lg:border-0 lg:bg-transparent lg:p-0 lg:shadow-none`}
         >
           {NAV_LINKS.map((l) => (
             <a
               key={l.href}
               href={l.href}
               onClick={() => setOpen(false)}
-              className="rounded-lg px-3 py-3 text-base font-medium text-muted hover:bg-bg-alt hover:text-fg md:py-2 md:text-[0.95rem]"
+              className="whitespace-nowrap rounded-lg px-3 py-3 text-base font-medium text-muted hover:bg-bg-alt hover:text-fg lg:py-2 lg:text-[0.95rem]"
             >
               {l.label}
             </a>

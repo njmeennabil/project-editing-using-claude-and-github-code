@@ -63,6 +63,10 @@ export function About() {
             Crop requirements and fertiliser rates come from the BUMI360 crop database, with references including TNAU, Nepal
             guidelines and the Department of Agriculture Sarawak, as noted on each crop.
           </AboutCard>
+          <AboutCard title="Map data">
+            Map background © OpenStreetMap contributors (and © CARTO when enabled). Division boundaries from geoBoundaries
+            (citypopulation.de, CC BY 3.0), with Sarawak&apos;s districts merged into its 12 divisions by BUMI360.
+          </AboutCard>
           <AboutCard title="Coming next">
             Finer satellite rainfall (NASA GPM) and current soil moisture (NASA SMAP) for Sarawak.
           </AboutCard>

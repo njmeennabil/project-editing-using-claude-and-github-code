@@ -121,3 +121,21 @@ def plan(data, current_code, planted, climate, place, ph, irrigation=0.0, prep_d
         "recommendations": options[:3],
         "others": options[3:],
     }
+
+
+def climate_score(crop, climate, start, irrigation=0.0):
+    """Climate-only suitability (0–100) for one crop planted on `start`, used by the map."""
+    days, assumed = nasa_power.crop_season_days(crop)
+    sea = nasa_power.season_from_date(climate, start, days)
+    water = sea["rain_mm"] + irrigation
+    tp, t_note = temp_points(crop, sea["temp_c"])
+    wp, w_note = water_points(crop, water)
+    score = round((tp + wp) / (TEMP_MAX + WATER_MAX) * 100)
+    return {
+        "score": score,
+        "verdict": verdict(score),
+        "temp_points": round(tp / TEMP_MAX * 50),
+        "water_points": round(wp / WATER_MAX * 50),
+        "season": {**sea, "days": days, "days_assumed": assumed, "irrigation_mm": irrigation, "water_mm": water},
+        "notes": [t_note, w_note],
+    }

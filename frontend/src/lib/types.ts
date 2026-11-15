@@ -162,7 +162,7 @@ export interface FieldInput {
   temp: string;
   water: string;
   // NASA mode
-  location: string; // division code, or "GPS"
+  location: string; // division code, "GPS", or "MAP" (point tapped on the map)
   lat: string;
   lon: string;
   month: string; // "1"–"12"
@@ -173,7 +173,7 @@ export interface FieldInput {
 export interface PlanInput {
   current: string;
   planted: string; // YYYY-MM-DD
-  location: string; // division code or "GPS"
+  location: string; // division code, "GPS" or "MAP"
   lat: string;
   lon: string;
   ph: string;
@@ -219,4 +219,32 @@ export interface PlanResponse {
   };
   recommendations: PlanOption[];
   others: PlanOption[];
+}
+
+// ---------- Map (/api/map/suitability) ----------
+export interface MapScore {
+  score: number;
+  verdict: string;
+  temp_points: number;
+  water_points: number;
+  season: PlanOption["season"];
+  notes: string[];
+}
+
+export interface MapSuitability {
+  crop: { code: string; name: string; local_name: string };
+  planted: string;
+  irrigation: number;
+  source: string;
+  divisions: (Place & MapScore)[];
+  point: (Place & MapScore) | null;
+}
+
+/** A place chosen on the map, handed to the Field check or Next crop form. */
+export interface MapPlace {
+  location: string; // division code, or "MAP" for a tapped point
+  lat: string;
+  lon: string;
+  name: string;
+  nonce: number;
 }

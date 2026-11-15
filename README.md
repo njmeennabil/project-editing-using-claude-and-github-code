@@ -26,6 +26,13 @@ Tiga cadangan teratas dipaparkan. Penilaian giliran disimpan dalam jadual `penil
 *Penilaian Giliran* dalam Excel). Kebanyakannya masih **draf** dan perlu disemak pakar; tukar `disahkan` kepada 1
 selepas disemak.
 
+## Peta Sarawak
+
+Bahagian **Map** menunjukkan markah iklim (0–100) tanaman pilihan untuk 12 bahagian Sarawak pada tarikh tanam
+yang dipilih. Petani boleh tekan mana-mana tempat pada peta untuk semak titik itu, dan hantar lokasi itu ke
+*Field check* atau *Next crop*. Peta latar: CARTO (perlukan kunci percuma, `NEXT_PUBLIC_CARTO_KEY` di Vercel),
+atau OpenStreetMap kelabu jika tiada kunci. Sempadan bahagian: geoBoundaries (CC BY 3.0).
+
 ## Data NASA
 
 Petani pilih bahagian di Sarawak (atau guna GPS telefon) dan bulan tanam. Flask ambil purata suhu dan
