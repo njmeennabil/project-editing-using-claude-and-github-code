@@ -10,6 +10,10 @@
   --line: #26325a;
   --band: #3d4c78;
   --track: #18223f;
+  /* Status colours: green = suitable, amber = with management / care, red = not suitable. */
+  --ok: #4ade80;
+  --warn: #fbbf24;
+  --bad: #f87171;
   color-scheme: dark;
 }
 
@@ -22,6 +26,9 @@
   --color-line: var(--line);
   --color-band: var(--band);
   --color-track: var(--track);
+  --color-ok: var(--ok);
+  --color-warn: var(--warn);
+  --color-bad: var(--bad);
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-display: var(--font-space-grotesk), ui-sans-serif, system-ui, sans-serif;
 }
@@ -63,11 +70,11 @@ h1, h2, h3, h4 { text-wrap: balance; }
   display: inline-grid; place-items: center; min-width: 26px; height: 22px; padding: 0 4px;
   border-radius: 999px; font: 700 12px/1 var(--font-sans); font-variant-numeric: tabular-nums;
 }
-.bumi-pin.hr b { background: var(--fg); color: var(--bg); }
-.bumi-pin.r b { border: 2px solid var(--fg); }
-.bumi-pin.p b { border: 2px solid var(--fg); }
+.bumi-pin.hr b { background: var(--ok); color: #052e16; }
+.bumi-pin.r b { border: 2px solid var(--ok); color: var(--ok); }
+.bumi-pin.p b { border: 2px solid var(--warn); color: var(--warn); }
 .bumi-pin.p b::after { content: "!"; margin-left: 2px; }
-.bumi-pin.n b { border: 2px dashed var(--fg); }
+.bumi-pin.n b { background: var(--bad); color: #450a0a; }
 .bumi-pin.sel { outline: 3px solid var(--fg); outline-offset: 2px; }
 .zoom-low .bumi-pin { padding: 2px; gap: 0; }
 .zoom-low .bumi-pin span { display: none; }

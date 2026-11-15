@@ -13,11 +13,16 @@ import { TabSection } from "./TabSection";
 const STORAGE_KEY = "bumi360-plan-v1";
 
 const VERDICT_STYLE: Record<string, { cls: string; sym: string }> = {
-  "Highly recommended": { cls: "border-fg bg-fg text-bg", sym: "✓" },
-  Recommended: { cls: "border-fg text-fg", sym: "✓" },
-  "Possible with care": { cls: "border-fg text-fg", sym: "!" },
-  "Not recommended": { cls: "border-dashed border-fg text-fg", sym: "✕" },
+  "Highly recommended": { cls: "border-ok bg-ok text-[#052e16]", sym: "✓" },
+  Recommended: { cls: "border-ok bg-ok/10 text-ok", sym: "✓" },
+  "Possible with care": { cls: "border-warn bg-warn/10 text-warn", sym: "!" },
+  "Not recommended": { cls: "border-bad bg-bad/10 text-bad", sym: "✕" },
 };
+
+/** Green from 60, amber from 40, red below: the same bands as the verdicts. */
+export function scoreColor(score: number) {
+  return score >= 60 ? "var(--ok)" : score >= 40 ? "var(--warn)" : "var(--bad)";
+}
 
 export function VerdictPill({ verdict }: { verdict: string }) {
   const v = VERDICT_STYLE[verdict] ?? VERDICT_STYLE["Possible with care"];
@@ -37,7 +42,7 @@ export function ScoreRing({ score, size = 92 }: { score: number; size?: number }
       <svg viewBox="0 0 100 100" width={size} height={size} aria-hidden="true">
         <circle cx="50" cy="50" r={r} fill="none" stroke="var(--track)" strokeWidth="10" />
         <circle
-          cx="50" cy="50" r={r} fill="none" stroke="var(--fg)" strokeWidth="10" strokeLinecap="round"
+          cx="50" cy="50" r={r} fill="none" stroke={scoreColor(score)} strokeWidth="10" strokeLinecap="round"
           strokeDasharray={`${(c * score) / 100} ${c}`} transform="rotate(-90 50 50)"
         />
       </svg>
@@ -57,7 +62,7 @@ function Bar({ label, value, max }: { label: string; value: number; max: number 
         <span className="font-semibold">{value}/{max}</span>
       </div>
       <div className="h-2 rounded-full bg-track" aria-hidden="true">
-        <div className="h-2 rounded-full bg-fg" style={{ width: `${(value / max) * 100}%` }} />
+        <div className="h-2 rounded-full" style={{ width: `${(value / max) * 100}%`, background: scoreColor((value / max) * 100) }} />
       </div>
     </div>
   );
