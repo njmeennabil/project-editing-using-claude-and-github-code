@@ -30,6 +30,7 @@ import requests
 CMR = "https://cmr.earthdata.nasa.gov/search/granules.umm_json"
 MONTHLY = "GPM_3IMERGM"   # IMERG Final, monthly, 0.1°, mm/hr
 DAILY = "GPM_3IMERGDL"    # IMERG Late, daily, 0.1°
+DAILY_FINAL = "GPM_3IMERGDF"  # IMERG Final, daily (only used to check the Late run for bias)
 VERSION = "07"
 NORMAL_YEARS = (2001, 2024)
 RECENT_DAYS = 60
@@ -152,6 +153,31 @@ def probe(s):
         print(f"   Kuching cell [{j},{i}] = {a[j, i]:.2f} mm/day")
 
 
+def bias_check(s, start="2025-07-01", end="2025-09-30"):
+    """Compare IMERG Late with IMERG Final over the same days (Final is gauge-corrected)."""
+    late = {d: (o, u) for d, o, u in granules(DAILY, start, end)}
+    final = {d: (o, u) for d, o, u in granules(DAILY_FINAL, start, end)}
+    days = sorted(set(late) & set(final))
+    print(f"Bias check {start}..{end}: {len(days)} days with both Late and Final", flush=True)
+
+    def one(day):
+        return subset(s, *late[day], False), subset(s, *final[day], False)
+
+    tl = np.zeros((NLAT, NLON))
+    tf = np.zeros((NLAT, NLON))
+    with ThreadPoolExecutor(max_workers=8) as pool:
+        for a, b in pool.map(one, days):
+            tl += np.nan_to_num(a)
+            tf += np.nan_to_num(b)
+    ratio = tl / np.where(tf > 0, tf, np.nan)
+    print(f"  Sarawak mean: Late {np.nanmean(tl):.0f} mm, Final {np.nanmean(tf):.0f} mm, Late/Final = {np.nanmean(tl) / np.nanmean(tf):.2f}")
+    print(f"  per-cell Late/Final ratio: 10th pct {np.nanpercentile(ratio, 10):.2f}, median {np.nanmedian(ratio):.2f}, "
+          f"90th pct {np.nanpercentile(ratio, 90):.2f}")
+    for name, (la, lo) in {"Kuching": KUCHING, "Sibu": (2.287, 111.830), "Miri": (4.399, 113.991), "Limbang": (4.755, 115.009)}.items():
+        j, i = cell(la, lo)
+        print(f"  {name:8} Late {tl[j, i]:6.0f} mm  Final {tf[j, i]:6.0f} mm  ratio {tl[j, i] / tf[j, i]:.2f}")
+
+
 def build_normals(s):
     y0, y1 = NORMAL_YEARS
     g = granules(MONTHLY, f"{y0}-01-01", f"{y1}-12-31")
@@ -199,10 +225,14 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--probe", action="store_true")
     ap.add_argument("--rebuild-normals", action="store_true")
+    ap.add_argument("--bias-check", action="store_true")
     args = ap.parse_args()
     s = session()
     if args.probe:
         probe(s)
+        return
+    if args.bias_check:
+        bias_check(s)
         return
     old = json.loads(OUT.read_text()) if OUT.exists() else {}
     normals = old.get("normals")

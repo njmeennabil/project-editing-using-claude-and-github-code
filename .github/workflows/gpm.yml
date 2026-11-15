@@ -43,6 +43,12 @@ jobs:
             exit 1
           fi
 
+      - name: Compare IMERG Late with Final (development branches)
+        if: github.event_name == 'push'
+        env:
+          EARTHDATA_TOKEN: ${{ secrets.EARTHDATA_TOKEN }}
+        run: python backend/scripts/update_gpm.py --bias-check
+
       - name: Download GPM rainfall for Sarawak
         env:
           EARTHDATA_TOKEN: ${{ secrets.EARTHDATA_TOKEN }}
