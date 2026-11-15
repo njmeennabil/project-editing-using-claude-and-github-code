@@ -317,7 +317,7 @@ export function FieldCheck({
   );
 }
 
-function FieldShell({ id, label, hint, hintAlert, children }: {
+export function FieldShell({ id, label, hint, hintAlert, children }: {
   id: string;
   label: string;
   hint: string;
@@ -335,7 +335,7 @@ function FieldShell({ id, label, hint, hintAlert, children }: {
   );
 }
 
-function SelectField(props: {
+export function SelectField(props: {
   id: string;
   label: string;
   hint: string;
@@ -358,7 +358,7 @@ function SelectField(props: {
   );
 }
 
-function NumberField(props: {
+export function NumberField(props: {
   id: string;
   label: string;
   unit: string;

@@ -18,6 +18,14 @@ backend/    Python Flask                ── hos: Render (render.yaml)
         └─► NASA POWER  suhu dan hujan bulanan untuk 12 bahagian Sarawak / lokasi GPS
 ```
 
+## Cadangan tanaman seterusnya
+
+Petani pilih tanaman sekarang, **tarikh tanam**, lokasi dan pH tanah. BUMI360 kira tarikh tuai dan tarikh tanam
+seterusnya, kemudian beri markah 0–100 kepada setiap tanaman untuk musim itu: iklim NASA 45, giliran 35, pH tanah 20.
+Tiga cadangan teratas dipaparkan. Penilaian giliran disimpan dalam jadual `penilaian_giliran` (helaian
+*Penilaian Giliran* dalam Excel). Kebanyakannya masih **draf** dan perlu disemak pakar; tukar `disahkan` kepada 1
+selepas disemak.
+
 ## Data NASA
 
 Petani pilih bahagian di Sarawak (atau guna GPS telefon) dan bulan tanam. Flask ambil purata suhu dan

@@ -1,10 +1,11 @@
 import { cacheLife } from "next/cache";
-import { checkField, getSiteData } from "./api";
-import { DEFAULT_INPUT } from "./defaults";
-import type { CheckResponse, SiteData } from "./types";
+import { checkField, getSiteData, planNextCrop } from "./api";
+import { DEFAULT_INPUT, DEFAULT_PLAN } from "./defaults";
+import type { CheckResponse, PlanResponse, SiteData } from "./types";
 
 export interface InitialData extends SiteData {
   check: CheckResponse;
+  plan: PlanResponse;
 }
 
 /**
@@ -16,8 +17,12 @@ export async function getInitialData(): Promise<InitialData | null> {
   "use cache";
   cacheLife("hours");
   try {
-    const [site, check] = await Promise.all([getSiteData(10000), checkField(DEFAULT_INPUT, undefined, 10000)]);
-    return { ...site, check };
+    const [site, check, plan] = await Promise.all([
+      getSiteData(10000),
+      checkField(DEFAULT_INPUT, undefined, 10000),
+      planNextCrop(DEFAULT_PLAN, undefined, 10000),
+    ]);
+    return { ...site, check, plan };
   } catch {
     return null;
   }

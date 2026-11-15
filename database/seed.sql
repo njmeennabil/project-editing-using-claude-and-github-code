@@ -165,3 +165,35 @@ INSERT INTO jarak_tanaman (tanaman_id, jenis_varieti,
                            dalam_baris_min_cm, dalam_baris_max_cm) VALUES
 (4, NULL, 20, 20, 10, 10),
 (5, NULL, NULL, NULL, 20, 25);
+
+-- =====================================================================
+-- PENILAIAN GILIRAN (5 x 5) untuk pencadang tanaman seterusnya.
+-- Hanya soya -> jagung dan kacang tanah -> jagung datang daripada data asal;
+-- yang lain ialah draf berdasarkan prinsip agronomi umum (disahkan = 0).
+-- =====================================================================
+INSERT INTO penilaian_giliran (tanaman_sebelum_id, tanaman_selepas_id, penilaian, sebab, sumber, disahkan) VALUES
+(1, 1, 'lemah', 'Perosak dan penyakit terkumpul, dan nitrogen tanah terus berkurang.', 'Draf BUMI360 (prinsip agronomi umum), perlu disemak', 0),
+(1, 2, 'cemerlang', 'Legum selepas bijirin: perlukan sedikit nitrogen dan memutuskan kitaran perosak jagung.', 'Draf BUMI360 (prinsip agronomi umum), perlu disemak', 0),
+(1, 3, 'cemerlang', 'Legum selepas bijirin: perlukan sedikit nitrogen dan memutuskan kitaran perosak jagung.', 'Draf BUMI360 (prinsip agronomi umum), perlu disemak', 0),
+(1, 4, 'sederhana', 'Jagung menghabiskan nitrogen; sayur daun perlukan baja tambahan.', 'Draf BUMI360 (prinsip agronomi umum), perlu disemak', 0),
+(1, 5, 'sederhana', 'Jagung menghabiskan nitrogen; sayur daun perlukan baja tambahan.', 'Draf BUMI360 (prinsip agronomi umum), perlu disemak', 0),
+(2, 1, 'cemerlang', 'Legum menambah nitrogen dalam tanah untuk jagung.', 'Data asal pengguna', 1),
+(2, 2, 'lemah', 'Penyakit tanah terkumpul.', 'Draf BUMI360 (prinsip agronomi umum), perlu disemak', 0),
+(2, 3, 'sederhana', 'Kedua-duanya legum dan berkongsi sebahagian perosak dan penyakit.', 'Draf BUMI360 (prinsip agronomi umum), perlu disemak', 0),
+(2, 4, 'baik', 'Baki nitrogen daripada legum membantu pertumbuhan daun.', 'Draf BUMI360 (prinsip agronomi umum), perlu disemak', 0),
+(2, 5, 'baik', 'Baki nitrogen daripada legum membantu pertumbuhan daun.', 'Draf BUMI360 (prinsip agronomi umum), perlu disemak', 0),
+(3, 1, 'cemerlang', 'Hasil jagung dilaporkan meningkat sekitar 25% selepas kacang tanah.', 'Data asal pengguna', 1),
+(3, 2, 'sederhana', 'Kedua-duanya legum dan berkongsi sebahagian perosak dan penyakit.', 'Draf BUMI360 (prinsip agronomi umum), perlu disemak', 0),
+(3, 3, 'lemah', 'Elakkan: penyakit bintik daun dan nematod terkumpul.', 'Draf BUMI360 (prinsip agronomi umum), perlu disemak', 0),
+(3, 4, 'baik', 'Baki nitrogen daripada legum membantu pertumbuhan daun.', 'Draf BUMI360 (prinsip agronomi umum), perlu disemak', 0),
+(3, 5, 'baik', 'Baki nitrogen daripada legum membantu pertumbuhan daun.', 'Draf BUMI360 (prinsip agronomi umum), perlu disemak', 0),
+(4, 1, 'baik', 'Famili tumbuhan berbeza; memutuskan kitaran perosak dan penyakit.', 'Draf BUMI360 (prinsip agronomi umum), perlu disemak', 0),
+(4, 2, 'baik', 'Famili tumbuhan berbeza; memutuskan kitaran perosak dan penyakit.', 'Draf BUMI360 (prinsip agronomi umum), perlu disemak', 0),
+(4, 3, 'baik', 'Famili tumbuhan berbeza; memutuskan kitaran perosak dan penyakit.', 'Draf BUMI360 (prinsip agronomi umum), perlu disemak', 0),
+(4, 4, 'sederhana', 'Biasa ditanam berterusan, tetapi awasi perosak.', 'Draf BUMI360 (prinsip agronomi umum), perlu disemak', 0),
+(4, 5, 'baik', 'Famili tumbuhan berbeza; memutuskan kitaran perosak dan penyakit.', 'Draf BUMI360 (prinsip agronomi umum), perlu disemak', 0),
+(5, 1, 'baik', 'Famili tumbuhan berbeza; memutuskan kitaran perosak dan penyakit.', 'Draf BUMI360 (prinsip agronomi umum), perlu disemak', 0),
+(5, 2, 'baik', 'Famili tumbuhan berbeza; memutuskan kitaran perosak dan penyakit.', 'Draf BUMI360 (prinsip agronomi umum), perlu disemak', 0),
+(5, 3, 'baik', 'Famili tumbuhan berbeza; memutuskan kitaran perosak dan penyakit.', 'Draf BUMI360 (prinsip agronomi umum), perlu disemak', 0),
+(5, 4, 'baik', 'Famili tumbuhan berbeza; memutuskan kitaran perosak dan penyakit.', 'Draf BUMI360 (prinsip agronomi umum), perlu disemak', 0),
+(5, 5, 'lemah', 'Penyakit famili kubis terkumpul (cth. penyakit akar bengkak).', 'Draf BUMI360 (prinsip agronomi umum), perlu disemak', 0);

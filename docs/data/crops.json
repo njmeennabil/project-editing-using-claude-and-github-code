@@ -496,5 +496,232 @@
   "Soybean and peanut are legumes that add nitrogen to the soil.",
   "Crops grown after peanut are reported to yield about 25% more.",
   "Common sequence: legume first, then maize."
+ ],
+ "rotation_ratings": [
+  {
+   "before": "JAGUNG",
+   "after": "JAGUNG",
+   "rating": "lemah",
+   "label": "Poor",
+   "reason": "Pests and diseases build up, and soil nitrogen keeps falling.",
+   "source": "BUMI360 draft (general agronomy principles), awaiting review",
+   "verified": false
+  },
+  {
+   "before": "JAGUNG",
+   "after": "SOYA",
+   "rating": "cemerlang",
+   "label": "Excellent",
+   "reason": "A legume after a cereal needs little nitrogen and breaks maize pest cycles.",
+   "source": "BUMI360 draft (general agronomy principles), awaiting review",
+   "verified": false
+  },
+  {
+   "before": "JAGUNG",
+   "after": "KACANG_TANAH",
+   "rating": "cemerlang",
+   "label": "Excellent",
+   "reason": "A legume after a cereal needs little nitrogen and breaks maize pest cycles.",
+   "source": "BUMI360 draft (general agronomy principles), awaiting review",
+   "verified": false
+  },
+  {
+   "before": "JAGUNG",
+   "after": "KANGKUNG",
+   "rating": "sederhana",
+   "label": "Fair",
+   "reason": "Maize uses up nitrogen, so the leafy crop needs extra fertiliser.",
+   "source": "BUMI360 draft (general agronomy principles), awaiting review",
+   "verified": false
+  },
+  {
+   "before": "JAGUNG",
+   "after": "SAWI",
+   "rating": "sederhana",
+   "label": "Fair",
+   "reason": "Maize uses up nitrogen, so the leafy crop needs extra fertiliser.",
+   "source": "BUMI360 draft (general agronomy principles), awaiting review",
+   "verified": false
+  },
+  {
+   "before": "SOYA",
+   "after": "JAGUNG",
+   "rating": "cemerlang",
+   "label": "Excellent",
+   "reason": "The legume adds nitrogen to the soil for maize.",
+   "source": "Original user data",
+   "verified": true
+  },
+  {
+   "before": "SOYA",
+   "after": "SOYA",
+   "rating": "lemah",
+   "label": "Poor",
+   "reason": "Soil diseases build up.",
+   "source": "BUMI360 draft (general agronomy principles), awaiting review",
+   "verified": false
+  },
+  {
+   "before": "SOYA",
+   "after": "KACANG_TANAH",
+   "rating": "sederhana",
+   "label": "Fair",
+   "reason": "Both are legumes and share some pests and diseases.",
+   "source": "BUMI360 draft (general agronomy principles), awaiting review",
+   "verified": false
+  },
+  {
+   "before": "SOYA",
+   "after": "KANGKUNG",
+   "rating": "baik",
+   "label": "Good",
+   "reason": "Nitrogen left by the legume helps leaf growth.",
+   "source": "BUMI360 draft (general agronomy principles), awaiting review",
+   "verified": false
+  },
+  {
+   "before": "SOYA",
+   "after": "SAWI",
+   "rating": "baik",
+   "label": "Good",
+   "reason": "Nitrogen left by the legume helps leaf growth.",
+   "source": "BUMI360 draft (general agronomy principles), awaiting review",
+   "verified": false
+  },
+  {
+   "before": "KACANG_TANAH",
+   "after": "JAGUNG",
+   "rating": "cemerlang",
+   "label": "Excellent",
+   "reason": "Maize yield is reported to rise about 25% after peanut.",
+   "source": "Original user data",
+   "verified": true
+  },
+  {
+   "before": "KACANG_TANAH",
+   "after": "SOYA",
+   "rating": "sederhana",
+   "label": "Fair",
+   "reason": "Both are legumes and share some pests and diseases.",
+   "source": "BUMI360 draft (general agronomy principles), awaiting review",
+   "verified": false
+  },
+  {
+   "before": "KACANG_TANAH",
+   "after": "KACANG_TANAH",
+   "rating": "lemah",
+   "label": "Poor",
+   "reason": "Avoid: leaf spot disease and nematodes build up.",
+   "source": "BUMI360 draft (general agronomy principles), awaiting review",
+   "verified": false
+  },
+  {
+   "before": "KACANG_TANAH",
+   "after": "KANGKUNG",
+   "rating": "baik",
+   "label": "Good",
+   "reason": "Nitrogen left by the legume helps leaf growth.",
+   "source": "BUMI360 draft (general agronomy principles), awaiting review",
+   "verified": false
+  },
+  {
+   "before": "KACANG_TANAH",
+   "after": "SAWI",
+   "rating": "baik",
+   "label": "Good",
+   "reason": "Nitrogen left by the legume helps leaf growth.",
+   "source": "BUMI360 draft (general agronomy principles), awaiting review",
+   "verified": false
+  },
+  {
+   "before": "KANGKUNG",
+   "after": "JAGUNG",
+   "rating": "baik",
+   "label": "Good",
+   "reason": "A different plant family breaks pest and disease cycles.",
+   "source": "BUMI360 draft (general agronomy principles), awaiting review",
+   "verified": false
+  },
+  {
+   "before": "KANGKUNG",
+   "after": "SOYA",
+   "rating": "baik",
+   "label": "Good",
+   "reason": "A different plant family breaks pest and disease cycles.",
+   "source": "BUMI360 draft (general agronomy principles), awaiting review",
+   "verified": false
+  },
+  {
+   "before": "KANGKUNG",
+   "after": "KACANG_TANAH",
+   "rating": "baik",
+   "label": "Good",
+   "reason": "A different plant family breaks pest and disease cycles.",
+   "source": "BUMI360 draft (general agronomy principles), awaiting review",
+   "verified": false
+  },
+  {
+   "before": "KANGKUNG",
+   "after": "KANGKUNG",
+   "rating": "sederhana",
+   "label": "Fair",
+   "reason": "Often grown continuously, but watch for pests.",
+   "source": "BUMI360 draft (general agronomy principles), awaiting review",
+   "verified": false
+  },
+  {
+   "before": "KANGKUNG",
+   "after": "SAWI",
+   "rating": "baik",
+   "label": "Good",
+   "reason": "A different plant family breaks pest and disease cycles.",
+   "source": "BUMI360 draft (general agronomy principles), awaiting review",
+   "verified": false
+  },
+  {
+   "before": "SAWI",
+   "after": "JAGUNG",
+   "rating": "baik",
+   "label": "Good",
+   "reason": "A different plant family breaks pest and disease cycles.",
+   "source": "BUMI360 draft (general agronomy principles), awaiting review",
+   "verified": false
+  },
+  {
+   "before": "SAWI",
+   "after": "SOYA",
+   "rating": "baik",
+   "label": "Good",
+   "reason": "A different plant family breaks pest and disease cycles.",
+   "source": "BUMI360 draft (general agronomy principles), awaiting review",
+   "verified": false
+  },
+  {
+   "before": "SAWI",
+   "after": "KACANG_TANAH",
+   "rating": "baik",
+   "label": "Good",
+   "reason": "A different plant family breaks pest and disease cycles.",
+   "source": "BUMI360 draft (general agronomy principles), awaiting review",
+   "verified": false
+  },
+  {
+   "before": "SAWI",
+   "after": "KANGKUNG",
+   "rating": "baik",
+   "label": "Good",
+   "reason": "A different plant family breaks pest and disease cycles.",
+   "source": "BUMI360 draft (general agronomy principles), awaiting review",
+   "verified": false
+  },
+  {
+   "before": "SAWI",
+   "after": "SAWI",
+   "rating": "lemah",
+   "label": "Poor",
+   "reason": "Cabbage-family diseases build up (e.g. clubroot).",
+   "source": "BUMI360 draft (general agronomy principles), awaiting review",
+   "verified": false
+  }
  ]
 }

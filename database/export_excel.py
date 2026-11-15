@@ -86,6 +86,14 @@ SHEETS = [
         JOIN tanaman s ON s.id = g.tanaman_sebelum_id
         JOIN tanaman e ON e.id = g.tanaman_selepas_id ORDER BY g.id""",
      [17, 16, 15, 60]),
+    ("Penilaian Giliran", """
+        SELECT s.nama_bm AS "Tanaman sekarang", e.nama_bm AS "Tanaman seterusnya",
+               g.penilaian AS Penilaian, g.sebab AS Sebab, g.sumber AS Sumber,
+               CASE g.disahkan WHEN 1 THEN 'Ya' ELSE 'Belum (draf)' END AS Disahkan
+        FROM penilaian_giliran g
+        JOIN tanaman s ON s.id = g.tanaman_sebelum_id
+        JOIN tanaman e ON e.id = g.tanaman_selepas_id ORDER BY g.id""",
+     [18, 20, 13, 60, 46, 15]),
 ]
 
 UNIT_NOTE = "Unit: suhu °C, air mm/musim, baja kg/ha, jarak cm, tempoh dalam hari. Sel kosong = tiada data."

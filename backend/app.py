@@ -5,6 +5,8 @@ Endpoints
     GET  /api/crops                  All crops with full growing guides
     GET  /api/crops/<code>           One crop by its database code, e.g. /api/crops/JAGUNG (maize)
     GET  /api/rotation               Crop rotation pairs and notes
+    POST /api/rotation/plan  {"current": "JAGUNG", "planted": "2026-03-02", "location": "KUCHING", "ph": 6.2}
+         scores the 5 crops 0–100 for the next season and returns the top 3
     GET  /api/locations              Sarawak divisions with NASA climate data
     GET  /api/climate?location=KUCHING   (or ?lat=1.55&lon=110.35) monthly NASA POWER climate
     GET  /api/check?ph=&temp=&water=&crop=
@@ -18,6 +20,7 @@ Run locally:
 """
 import os
 import sys
+from datetime import date
 from functools import lru_cache
 from pathlib import Path
 
@@ -31,16 +34,19 @@ sys.path.insert(0, str(REPO / "database"))
 from crop_data import DEFAULT_DB, load_data  # noqa: E402
 
 import nasa_power  # noqa: E402
+import planner  # noqa: E402
 import rules  # noqa: E402
 from locations import BY_CODE, SARAWAK_DIVISIONS  # noqa: E402
 
 LIMITS = {
     "ph": (0.0, 14.0), "temp": (-10.0, 60.0), "water": (0.0, 20000.0),
     "month": (1, 12), "irrigation": (0.0, 5000.0), "lat": (-90.0, 90.0), "lon": (-180.0, 180.0),
+    "prep_days": (0, 180),
 }
 NAMES = {
     "ph": "Soil pH", "temp": "Average temperature", "water": "Water per season",
     "month": "Planting month", "irrigation": "Extra irrigation", "lat": "Latitude", "lon": "Longitude",
+    "prep_days": "Days between harvest and next planting",
 }
 POWER_SOURCE = "NASA POWER"
 
@@ -163,6 +169,39 @@ def create_app():
         ]
         return jsonify(location=place, source=POWER_SOURCE, period=data.get("period"), monthly=monthly,
                        rain_mm_year=sum(m["rain_mm"] for m in monthly))
+
+    @app.route("/api/rotation/plan", methods=["GET", "POST"])
+    def rotation_plan():
+        src = (request.get_json(silent=True) or {}) if request.method == "POST" else request.args
+        data = get_data()
+        codes = [c["code"] for c in data["crops"]]
+        current = str(src.get("current") or "").strip().upper()
+        if current not in codes:
+            raise BadInput("Choose the crop you are growing now: " + ", ".join(codes) + ".")
+        raw_date = str(src.get("planted") or "").strip()
+        try:
+            planted = date.fromisoformat(raw_date)
+        except ValueError:
+            raise BadInput("Planting date must look like 2026-03-02 (year-month-day).")
+        if not date(2000, 1, 1) <= planted <= date(2100, 12, 31):
+            raise BadInput("Planting date must be between 2000 and 2100.")
+        ph = parse_number(src.get("ph"), "ph")
+        if ph is None:
+            raise BadInput("Enter your soil pH to score the next crop.")
+        irrigation = parse_number(src.get("irrigation"), "irrigation") or 0.0
+        prep = parse_number(src.get("prep_days"), "prep_days")
+        prep_days = planner.DEFAULT_PREP_DAYS if prep is None else int(round(prep))
+        place, clim = resolve_climate(src)
+        if clim is None:
+            raise BadInput("Choose a location in Sarawak, or use your GPS location.")
+
+        result = planner.plan(data, current, planted, clim, place, ph, irrigation, prep_days)
+        return jsonify(
+            input={"current": current, "planted": planted.isoformat(), "ph": ph, "irrigation": irrigation,
+                   "prep_days": prep_days},
+            climate={"source": POWER_SOURCE, "period": clim.get("period")},
+            **result,
+        )
 
     @app.route("/api/check", methods=["GET", "POST"])
     def check():

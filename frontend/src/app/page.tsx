@@ -22,7 +22,7 @@ export default async function Home() {
       <SiteHeader />
       <main>
         <Hero cropCount={initial?.crops.length ?? 5} />
-        <BumiApp initialData={site} initialCheck={initial?.check ?? null} />
+        <BumiApp initialData={site} initialCheck={initial?.check ?? null} initialPlan={initial?.plan ?? null} />
         <About />
       </main>
       <SiteFooter />

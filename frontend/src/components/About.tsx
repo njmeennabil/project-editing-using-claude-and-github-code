@@ -54,6 +54,11 @@ export function About() {
             month. NASA data describes an area of about 50 km, so local conditions can differ. Data obtained from the NASA
             Langley Research Center (LaRC) POWER Project funded through the NASA Earth Science/Applied Science Program.
           </AboutCard>
+          <AboutCard title="Next-crop score">
+            Each crop gets up to 45 points for climate (NASA temperature and rainfall over its own season after your
+            harvest), 35 for rotation after your current crop, and 20 for soil pH. Most rotation ratings are drafts from
+            general agronomy and are awaiting expert review.
+          </AboutCard>
           <AboutCard title="Crop data">
             Crop requirements and fertiliser rates come from the BUMI360 crop database, with references including TNAU, Nepal
             guidelines and the Department of Agriculture Sarawak, as noted on each crop.

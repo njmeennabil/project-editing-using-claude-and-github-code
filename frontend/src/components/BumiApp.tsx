@@ -2,11 +2,12 @@
 
 import { useEffect, useState } from "react";
 import { getSiteData } from "@/lib/api";
-import type { CheckResponse, SiteData } from "@/lib/types";
+import type { CheckResponse, PlanResponse, SiteData } from "@/lib/types";
 import { Compare } from "./Compare";
 import { Container, Eyebrow, SectionTitle } from "./Container";
 import { CropGuide } from "./CropGuide";
 import { FieldCheck } from "./FieldCheck";
+import { NextCrop } from "./NextCrop";
 import { Rotation } from "./Rotation";
 
 /**
@@ -14,7 +15,15 @@ import { Rotation } from "./Rotation";
  * available; otherwise loads it from the Flask API in the browser and retries
  * while a sleeping server wakes up.
  */
-export function BumiApp({ initialData, initialCheck }: { initialData: SiteData | null; initialCheck: CheckResponse | null }) {
+export function BumiApp({
+  initialData,
+  initialCheck,
+  initialPlan,
+}: {
+  initialData: SiteData | null;
+  initialCheck: CheckResponse | null;
+  initialPlan: PlanResponse | null;
+}) {
   const [data, setData] = useState<SiteData | null>(initialData);
   const [failed, setFailed] = useState(false);
   const [retry, setRetry] = useState(0);
@@ -88,6 +97,7 @@ export function BumiApp({ initialData, initialCheck }: { initialData: SiteData |
   return (
     <>
       <FieldCheck crops={data.crops} locations={data.locations} initialCheck={initialCheck} onViewGuide={viewGuide} />
+      <NextCrop crops={data.crops} locations={data.locations} initialPlan={initialPlan} onViewGuide={viewGuide} />
       <CropGuide crops={data.crops} rotation={data.rotation} selected={selected} onSelect={setSelected} />
       <Compare crops={data.crops} />
       <Rotation rotation={data.rotation} notes={data.notes} />

@@ -168,3 +168,55 @@ export interface FieldInput {
   month: string; // "1"–"12"
   irrigation: string;
 }
+
+// ---------- Next-crop planner (/api/rotation/plan) ----------
+export interface PlanInput {
+  current: string;
+  planted: string; // YYYY-MM-DD
+  location: string; // division code or "GPS"
+  lat: string;
+  lon: string;
+  ph: string;
+  prep_days: string;
+  irrigation: string;
+}
+
+export interface PlanOption {
+  code: string;
+  name: string;
+  local_name: string;
+  score: number;
+  verdict: string;
+  breakdown: { climate: number; rotation: number; soil: number };
+  max: { climate: number; rotation: number; soil: number };
+  rotation: { rating: string; reason: string; verified: boolean; source: string };
+  season: {
+    temp_c: number;
+    rain_mm: number;
+    months: string;
+    start: string;
+    end: string;
+    days: number;
+    days_assumed: boolean;
+    irrigation_mm: number;
+    water_mm: number;
+  };
+  notes: string[];
+}
+
+export interface PlanResponse {
+  input: { current: string; planted: string; ph: number; irrigation: number; prep_days: number };
+  climate: { source: string; period: string | null };
+  location: Place;
+  timeline: {
+    current: { code: string; name: string; local_name: string };
+    planted: string;
+    growing_days: number;
+    growing_days_assumed: boolean;
+    harvest: string;
+    prep_days: number;
+    next_planting: string;
+  };
+  recommendations: PlanOption[];
+  others: PlanOption[];
+}
