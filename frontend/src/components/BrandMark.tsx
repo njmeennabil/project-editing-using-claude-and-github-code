@@ -10,10 +10,10 @@ export function BrandMark({ className = "" }: { className?: string }) {
   );
 }
 
-export function Wordmark() {
+export function Wordmark({ light = false }: { light?: boolean }) {
   return (
     <span>
-      BUMI<span className="font-medium text-muted">360</span>
+      BUMI<span className={`font-medium ${light ? "text-white/65" : "text-muted"}`}>360</span>
     </span>
   );
 }

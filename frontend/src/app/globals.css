@@ -86,3 +86,10 @@ h1, h2, h3, h4 { text-wrap: balance; }
 .zoom-low .bumi-pin { padding: 2px; gap: 0; }
 .zoom-low .bumi-pin span { display: none; }
 .zoom-low .bumi-pin.sel span { display: inline; padding-right: 6px; }
+
+/* ---------- Hero background scenes ---------- */
+.hero-scene { opacity: 0; transform: scale(1.06); transition: opacity 1.6s ease, transform 9s ease-out; }
+.hero-scene.is-on { opacity: 1; transform: scale(1); }
+@media (prefers-reduced-motion: reduce) {
+  .hero-scene { transform: none; transition: opacity .3s linear; }
+}
