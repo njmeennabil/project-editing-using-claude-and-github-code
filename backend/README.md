@@ -24,6 +24,7 @@ python3 -m venv .venv
 | GET | `/api/locations` | Sarawak's 12 divisions |
 | GET | `/api/climate?location=KUCHING` | Monthly NASA POWER temperature and rainfall (or `?lat=&lon=`) |
 | GET / POST | `/api/rotation/plan` | Next-crop planner: `current` (crop code), `planted` (YYYY-MM-DD), `location` (or `lat`/`lon`), `ph`, optional `prep_days` (default 14) and `irrigation`. Scores all 5 crops 0–100 and returns the top 3 |
+| GET | `/api/map/rain?crop=&planted=` | NASA GPM rainfall grid for the map: expected rain over the crop's season, and the last 60 days against normal |
 | GET / POST | `/api/check` | Suitability. Either `ph`, `temp`, `water`, or `ph`, `location` (or `lat`/`lon`), `month`, `irrigation`. Optional `crop` (`all` or a code) |
 
 Example:
@@ -77,9 +78,26 @@ NASA Earth Science/Applied Science Program.
 
 | Part | Points | Rule |
 |---|---|---|
-| Climate fit | 45 | Temperature 22.5 (−4.5 per °C outside the best range) + water 22.5 (shortfall in proportion; excess down to 40%; 18 for crops with no mm figure) |
-| Rotation | 35 | `penilaian_giliran` table: Excellent 35 · Good 26 · Fair 16 · Poor 5 |
-| Soil pH | 20 | −10 per pH unit outside the range; 0 below a danger level |
+| Climate fit | 40 | Temperature 20 (−4 per °C outside the best range) + water 20 (shortfall in proportion; excess down to 40%; 16 for crops with no mm figure) |
+| Rotation | 30 | `penilaian_giliran` table: Excellent 30 · Good 22 · Fair 14 · Poor 4 |
+| Soil pH | 15 | −7.5 per pH unit outside the range; 0 below a danger level |
+| Recent rain | 15 | Last 60 days of GPM rain ÷ normal: full points from 0.8 to 1.3; less when drier or much wetter; 11 if no data |
 
 A Poor rotation caps the verdict at "Possible with care". Most rotation ratings are drafts
 (`disahkan = 0` in the database) awaiting expert review.
+
+## NASA GPM rainfall (`gpm.py`)
+
+`data/gpm_sarawak.json` holds a 0.1° (~10 km) grid over Sarawak: monthly rainfall normals for 2001–2024
+(IMERG Final, `GPM_3IMERGM`) and the last 60 days (IMERG Late, `GPM_3IMERGDL`). Wherever this grid covers a
+place, its rainfall replaces NASA POWER rainfall (temperature stays from POWER). A place uses the mean of the
+3 × 3 cells around it.
+
+The file is built by `scripts/update_gpm.py` in GitHub Actions (`.github/workflows/gpm.yml`) every Monday,
+using the `EARTHDATA_TOKEN` repository secret. Only the Sarawak box of each NASA file is downloaded (OPeNDAP).
+A check over July–September 2025 found IMERG Late within about ±7% of IMERG Final at Sarawak's towns.
+
+**The Earthdata token expires after 60 days.** When the weekly run fails with "NASA refused access", generate
+a new token at urs.earthdata.nasa.gov and replace the `EARTHDATA_TOKEN` secret.
+
+GPM IMERG data provided by NASA Goddard Earth Sciences Data and Information Services Center (GES DISC).

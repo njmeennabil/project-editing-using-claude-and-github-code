@@ -67,12 +67,14 @@ function OptionCard({
   rank,
   after,
   place,
+  source,
   onViewGuide,
 }: {
   o: PlanOption;
   rank: number;
   after: string;
   place: string;
+  source: string;
   onViewGuide: (code: string) => void;
 }) {
   return (
@@ -92,12 +94,15 @@ function OptionCard({
           <Bar label="Climate fit" value={o.breakdown.climate} max={o.max.climate} />
           <Bar label="Rotation" value={o.breakdown.rotation} max={o.max.rotation} />
           <Bar label="Soil pH" value={o.breakdown.soil} max={o.max.soil} />
+          {o.breakdown.current != null && o.max.current != null && (
+            <Bar label="Recent rain" value={o.breakdown.current} max={o.max.current} />
+          )}
         </div>
       </div>
 
       <div className="grid min-w-0 content-start gap-3">
         <p className="rounded-[10px] border border-line bg-bg px-3 py-2 text-[0.82rem] leading-snug text-muted">
-          <span className="font-semibold text-fg">NASA POWER</span> · {place} · {o.season.months} ({o.season.days} days
+          <span className="font-semibold text-fg">{source}</span> · {place} · {o.season.months} ({o.season.days} days
           {o.season.days_assumed ? ", assumed" : ""}): {num(o.season.temp_c)}°C average, {num(o.season.rain_mm)} mm rain
           {o.season.irrigation_mm ? ` + ${num(o.season.irrigation_mm)} mm irrigation` : ""}
         </p>
@@ -339,6 +344,16 @@ export function NextCrop({
                   ))}
                 </ol>
 
+                {data.recent && (
+                  <p className="rounded-[12px] border border-line bg-surface px-4 py-3 text-[0.9rem]">
+                    <strong>Recent rain ({niceDate(data.recent.start)} – {niceDate(data.recent.end)}):</strong>{" "}
+                    {num(data.recent.total_mm)} mm, {data.recent.ratio >= 0.8 && data.recent.ratio <= 1.3
+                      ? "close to normal"
+                      : `${Math.round(Math.abs(data.recent.ratio - 1) * 100)}% ${data.recent.ratio < 1 ? "drier" : "wetter"} than normal`}{" "}
+                    ({num(data.recent.normal_mm)} mm). <span className="text-muted">NASA GPM IMERG, last {data.recent.days} days.</span>
+                  </p>
+                )}
+
                 <h3 className="font-display text-[1.3rem] font-semibold">
                   Top 3 crops to plant after {t.current.name.toLowerCase()} in {placeName}
                   {loading && <span className="text-[0.9rem] font-normal text-muted"> · Updating…</span>}
@@ -346,7 +361,7 @@ export function NextCrop({
 
                 <div className="grid grid-cols-1 gap-4">
                   {data.recommendations.map((o, i) => (
-                    <OptionCard key={o.code} o={o} rank={i + 1} after={t.current.name} place={placeName} onViewGuide={onViewGuide} />
+                    <OptionCard key={o.code} o={o} rank={i + 1} after={t.current.name} place={placeName} source={data.climate.source} onViewGuide={onViewGuide} />
                   ))}
                 </div>
 
@@ -369,8 +384,9 @@ export function NextCrop({
                 )}
 
                 <p className="text-[0.82rem] text-muted">
-                  Scores are a guide, not a guarantee: climate fit 45 points (NASA POWER {data.climate.period?.match(/\d{4}\D+\d{4}/)?.[0].replace(/\D+/, "–") ?? ""} averages
-                  for the next crop&apos;s own season), rotation 35, soil pH 20. A poor rotation is never shown as recommended.
+                  Scores are a guide, not a guarantee: climate fit 40 points (temperature from NASA POWER, rainfall from NASA
+                  GPM where available, for the next crop&apos;s own season), rotation 30, soil pH 15, and recent rain 15 (last
+                  60 days of NASA GPM rainfall against normal). A poor rotation is never shown as recommended.
                 </p>
               </div>
             ) : (

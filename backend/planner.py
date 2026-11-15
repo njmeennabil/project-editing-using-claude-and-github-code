@@ -1,8 +1,9 @@
 """BUMI360 next-crop planner: scores each crop 0–100 for the season after the current crop.
 
-    Climate fit   45 points  NASA temperature (22.5) and rainfall (22.5) over the next crop's own season
-    Rotation      35 points  from the rotation ratings: Excellent 35 · Good 26 · Fair 16 · Poor 5
-    Soil pH       20 points  full inside the crop's range, 10 points less per pH unit outside
+    Climate fit   40 points  temperature (20, NASA POWER) and rainfall (20, NASA GPM) over the next crop's own season
+    Rotation      30 points  from the rotation ratings: Excellent 30 · Good 22 · Fair 14 · Poor 4
+    Soil pH       15 points  full inside the crop's range, 7.5 points less per pH unit outside
+    Recent rain   15 points  last 60 days of NASA GPM rainfall against normal (same for every crop)
 
 The score is a guidance index, not a guarantee. A Poor rotation caps the verdict at
 "Possible with care" (the score itself is unchanged), so a repeat crop is never "Recommended".
@@ -12,12 +13,14 @@ from datetime import timedelta
 import nasa_power
 from rules import fmt, fmt_range
 
-ROTATION_POINTS = {"cemerlang": 35, "baik": 26, "sederhana": 16, "lemah": 5}
-TEMP_MAX, WATER_MAX, SOIL_MAX = 22.5, 22.5, 20.0
-TEMP_LOSS_PER_C = 4.5          # 5 °C outside the optimum = 0 points
-WATER_NO_FIGURE = 18.0         # crops with no seasonal mm figure (leafy vegetables)
+ROTATION_POINTS = {"cemerlang": 30, "baik": 22, "sederhana": 14, "lemah": 4}
+TEMP_MAX, WATER_MAX, SOIL_MAX, CURRENT_MAX = 20.0, 20.0, 15.0, 15.0
+TEMP_LOSS_PER_C = 4.0          # 5 °C outside the optimum = 0 points
+WATER_NO_FIGURE = 16.0         # crops with no seasonal mm figure (leafy vegetables): 80 %
 EXCESS_FLOOR = 0.4             # too much rain never drops below 40 % (drainage can manage it)
-SOIL_LOSS_PER_PH = 10.0
+SOIL_LOSS_PER_PH = 7.5
+CURRENT_NO_DATA = 11.0         # no recent rainfall figure: about 75 %
+NORMAL_BAND = (0.8, 1.3)       # recent rain within this share of normal = full points
 DEFAULT_PREP_DAYS = 14
 
 
@@ -68,7 +71,24 @@ def soil_points(crop, ph):
         f"Soil pH {ph:.1f} is {diff:.1f} {'below' if ph < lo else 'above'} the range ({lo:.1f}–{hi:.1f})."
 
 
-def plan(data, current_code, planted, climate, place, ph, irrigation=0.0, prep_days=DEFAULT_PREP_DAYS):
+def current_points(recent):
+    """Points for the last 60 days of rain against normal (None = no data)."""
+    if not recent:
+        return CURRENT_NO_DATA, "Recent rainfall data is not available for this place."
+    r = recent["ratio"]
+    lo, hi = NORMAL_BAND
+    pct = round(abs(r - 1) * 100)
+    summary = f"Last {recent['days']} days: {fmt(recent['total_mm'])} mm of rain (normal {fmt(recent['normal_mm'])} mm)"
+    if lo <= r <= hi:
+        return CURRENT_MAX, f"{summary}, close to normal."
+    if r < lo:
+        return CURRENT_MAX * max(0.0, (r - 0.3) / (lo - 0.3)), \
+            f"{summary}, {pct}% drier than normal. Check soil moisture and plan irrigation before planting."
+    return max(7.0, CURRENT_MAX - (r - hi) * 10), \
+        f"{summary}, {pct}% wetter than normal. Check drainage before planting."
+
+
+def plan(data, current_code, planted, climate, place, ph, irrigation=0.0, prep_days=DEFAULT_PREP_DAYS, recent=None):
     crops = data["crops"]
     by_code = {c["code"]: c for c in crops}
     current = by_code[current_code]
@@ -78,6 +98,7 @@ def plan(data, current_code, planted, climate, place, ph, irrigation=0.0, prep_d
     harvest = planted + timedelta(days=grow_days)
     next_start = harvest + timedelta(days=prep_days)
 
+    cp, c_note = current_points(recent)
     options = []
     for c in crops:
         days, assumed = nasa_power.crop_season_days(c)
@@ -88,8 +109,9 @@ def plan(data, current_code, planted, climate, place, ph, irrigation=0.0, prep_d
         rot = ratings[(current_code, c["code"])]
         sp, s_note = soil_points(c, ph)
 
-        parts = {"climate": round(tp + wp), "rotation": ROTATION_POINTS[rot["rating"]], "soil": round(sp)}
-        score = parts["climate"] + parts["rotation"] + parts["soil"]
+        parts = {"climate": round(tp + wp), "rotation": ROTATION_POINTS[rot["rating"]], "soil": round(sp),
+                 "current": round(cp)}
+        score = sum(parts.values())
         options.append({
             "code": c["code"],
             "name": c["name"],
@@ -97,10 +119,10 @@ def plan(data, current_code, planted, climate, place, ph, irrigation=0.0, prep_d
             "score": score,
             "verdict": verdict(score, rot["rating"]),
             "breakdown": parts,
-            "max": {"climate": 45, "rotation": 35, "soil": 20},
+            "max": {"climate": 40, "rotation": 30, "soil": 15, "current": 15},
             "rotation": {"rating": rot["label"], "reason": rot["reason"], "verified": rot["verified"], "source": rot["source"]},
             "season": {**sea, "days": days, "days_assumed": assumed, "irrigation_mm": irrigation, "water_mm": water},
-            "notes": [t_note, w_note, s_note],
+            "notes": [t_note, w_note, s_note, c_note],
             "_order": c["id"],
         })
     options.sort(key=lambda o: (-o["score"], o["_order"]))
@@ -118,6 +140,7 @@ def plan(data, current_code, planted, climate, place, ph, irrigation=0.0, prep_d
             "next_planting": next_start.isoformat(),
         },
         "location": place,
+        "recent": recent,
         "recommendations": options[:3],
         "others": options[3:],
     }

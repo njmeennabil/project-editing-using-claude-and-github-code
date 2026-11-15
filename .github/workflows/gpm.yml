@@ -1,0 +1,64 @@
+name: Update NASA GPM rainfall
+
+on:
+  schedule:
+    - cron: "17 3 * * 1"        # every Monday, 03:17 UTC
+  workflow_dispatch:
+    inputs:
+      rebuild_normals:
+        description: "Recompute the 2001–2024 monthly normals"
+        type: boolean
+        default: false
+  push:                          # also runs on development branches when the pipeline changes
+    branches: ["claude/**"]
+    paths: ["backend/scripts/update_gpm.py", ".github/workflows/gpm.yml"]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: gpm-update
+  cancel-in-progress: false
+
+jobs:
+  gpm:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install
+        run: pip install requests==2.32.3 h5py==3.12.1 numpy==2.1.3
+
+      - name: Check the NASA token
+        env:
+          EARTHDATA_TOKEN: ${{ secrets.EARTHDATA_TOKEN }}
+        run: |
+          if [ -z "$EARTHDATA_TOKEN" ]; then
+            echo "::error::Add the EARTHDATA_TOKEN secret: repo Settings → Secrets and variables → Actions."
+            exit 1
+          fi
+
+      - name: Compare IMERG Late with Final (development branches)
+        if: github.event_name == 'push'
+        env:
+          EARTHDATA_TOKEN: ${{ secrets.EARTHDATA_TOKEN }}
+        run: python backend/scripts/update_gpm.py --bias-check
+
+      - name: Download GPM rainfall for Sarawak
+        env:
+          EARTHDATA_TOKEN: ${{ secrets.EARTHDATA_TOKEN }}
+        run: python backend/scripts/update_gpm.py ${{ inputs.rebuild_normals && '--rebuild-normals' || '' }}
+
+      - name: Save the new data
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add backend/data/gpm_sarawak.json
+          git diff --cached --quiet || git commit -m "Update NASA GPM rainfall for Sarawak"
+          git pull --rebase --quiet
+          git push
