@@ -10,11 +10,13 @@ so dense forest does not leave gaps. Runs in GitHub Actions with EARTHDATA_TOKEN
   python3 update_smap.py --rebuild-normals  recompute the 2016–2025 monthly normals
 
 SMAP uses the EASE-Grid 2.0 (9 km) map grid, where every row has one latitude and every
-column one longitude, so the Sarawak box is a simple block of rows and columns.
+column one longitude, so the Sarawak box is a simple block of rows and columns
+(rows 739–800, columns 3100–3168).
 """
 import argparse
 import io
 import json
+import math
 import sys
 from concurrent.futures import ThreadPoolExecutor
 from datetime import date, datetime, timedelta, timezone
@@ -83,13 +85,45 @@ def dap(s, opendap_url, *exprs):
     return out
 
 
-def locate(s, opendap_url):
-    """Rows and columns of the Sarawak box, with their latitudes and longitudes."""
-    v = dap(s, opendap_url, f"/cell_lat[0:{NROWS - 1}][{NCOLS // 2}]", f"/cell_lon[{NROWS // 2}][0:{NCOLS - 1}]")
-    lats, lons = v["cell_lat"].ravel(), v["cell_lon"].ravel()
-    rows = np.where((lats >= BOX["south"]) & (lats <= BOX["north"]))[0]
-    cols = np.where((lons >= BOX["west"]) & (lons <= BOX["east"]))[0]
-    return int(rows.min()), int(rows.max()), int(cols.min()), int(cols.max()), lats, lons
+# EASE-Grid 2.0 global, 9 km (EPSG:6933), NSIDC parameters. The SMAP L4 files carry no
+# latitude/longitude arrays at the top level, so rows and columns are computed here.
+_A, _E = 6378137.0, 0.0818191908426215
+_CELL = 9008.055210146
+_X0, _Y0 = -17367530.44516138, 7314540.830907101
+_K0 = math.cos(math.radians(30)) / math.sqrt(1 - _E ** 2 * math.sin(math.radians(30)) ** 2)
+
+
+def _q(phi):
+    sn = math.sin(phi)
+    return (1 - _E ** 2) * (sn / (1 - _E ** 2 * sn * sn) - (1 / (2 * _E)) * math.log((1 - _E * sn) / (1 + _E * sn)))
+
+
+def ease_row_col(lat, lon):
+    x = _A * _K0 * math.radians(lon)
+    y = _A * _q(math.radians(lat)) / (2 * _K0)
+    return int((_Y0 - y) // _CELL), int((x - _X0) // _CELL)
+
+
+def ease_row_lat(r):
+    target = 2 * _K0 * (_Y0 - (r + 0.5) * _CELL) / _A
+    lo, hi = -math.pi / 2, math.pi / 2
+    for _ in range(80):
+        mid = (lo + hi) / 2
+        lo, hi = (mid, hi) if _q(mid) < target else (lo, mid)
+    return math.degrees((lo + hi) / 2)
+
+
+def ease_col_lon(c):
+    return math.degrees((_X0 + (c + 0.5) * _CELL) / (_A * _K0))
+
+
+def locate(s=None, opendap_url=None):
+    """Rows and columns of the Sarawak box, with the latitude of every row and longitude of every column."""
+    r0, c0 = ease_row_col(BOX["north"], BOX["west"])
+    r1, c1 = ease_row_col(BOX["south"], BOX["east"])
+    lats = np.array([ease_row_lat(r) for r in range(NROWS)])
+    lons = np.array([ease_col_lon(c) for c in range(NCOLS)])
+    return r0, r1, c0, c1, lats, lons
 
 
 def subset(s, opendap_url, r0, r1, c0, c1):
