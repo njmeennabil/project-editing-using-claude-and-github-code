@@ -22,3 +22,9 @@ export function maturity(c: Crop): string {
 }
 
 export const waterText = (c: Crop) => (c.water_min_mm == null ? "Keep moist" : `${range(c.water_min_mm, c.water_max_mm)} mm`);
+
+/** "This week's soil moisture" sentence from NASA SMAP. */
+export function soilSentence(sm: { rootzone_pct: number; usual_rootzone_pct: number | null; label: string }) {
+  const usual = sm.usual_rootzone_pct == null ? "" : ` (usual for this month ${Math.round(sm.usual_rootzone_pct)}%)`;
+  return `${Math.round(sm.rootzone_pct)}% in the root zone, ${sm.label}${usual}`;
+}

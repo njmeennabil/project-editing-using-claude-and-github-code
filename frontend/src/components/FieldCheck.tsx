@@ -3,7 +3,8 @@
 import { useEffect, useState } from "react";
 import { ApiError, checkField } from "@/lib/api";
 import { DEFAULT_INPUT, MONTHS } from "@/lib/defaults";
-import { num } from "@/lib/format";
+import { num, soilSentence } from "@/lib/format";
+import { niceDate } from "@/lib/geo";
 import type { CheckResponse, ClimateMode, Crop, FieldInput, MapPlace, Place } from "@/lib/types";
 import { Container, Eyebrow, Panel, SectionTitle } from "./Container";
 import { ResultCard } from "./ResultCard";
@@ -312,6 +313,13 @@ export function FieldCheck({
                     {conds}
                     {loading && " · Updating…"}
                   </p>
+                  {climate?.soil_moisture && (
+                    <p className="rounded-[12px] border border-line bg-surface px-4 py-2.5 text-[0.88rem]">
+                      <strong>Soil moisture this week</strong> ({niceDate(climate.soil_moisture.start)} –{" "}
+                      {niceDate(climate.soil_moisture.end)}): {soilSentence(climate.soil_moisture)}.{" "}
+                      <span className="text-muted">NASA SMAP, about 9 km.</span>
+                    </p>
+                  )}
                   {!single && (
                     <div className="flex flex-wrap gap-2">
                       {(["ok", "warn", "bad"] as const)
