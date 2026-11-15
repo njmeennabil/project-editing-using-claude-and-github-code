@@ -33,23 +33,19 @@ ffmpeg -y -loglevel error \
 
 # Screen recording: pick the clips for scenes 4–6, scale to the phone screen (432x912),
 # start at 13.8 s and hold the last frame until the end.
-#   source start  length  shows
-#   2.5           2.25    form with soil pH          (scene 4)
-#   6.0           1.45    choosing the location      (scene 4)
-#   11.6          5.50    choosing the planting month (scene 4)
-#   22.5          7.10    result: Water Spinach suitable, NASA POWER (scene 5)
-#   34.0          3.20    growing guide tabs         (scene 6)
-#   41.4          3.50    maize guide: NPK, practices, rotation (scene 6)
+#   source start  length  played as  shows
+#   2.6           9.2     9.2 s      home -> Field check: soil pH, location, planting month, Check  (scene 4)
+#   11.8          6.4     7.1 s      result: 3 of 5 crops suit your field, crop cards               (scene 5)
+#   35.6          2.7     3.6 s      Crop guide: maize, fertiliser, good practice, rotation        (scene 6)
+#   44.2          3.1     3.1 s      Rotation tab: plant legumes first                             (scene 6)
 # Scale so the phone status bar (clock, recording dot) is cropped off the top.
 V="fps=30,scale=-2:976,crop=432:912:(iw-432)/2:62,setsar=1"
 ffmpeg -y -loglevel error -i "$REC" -filter_complex "\
-[0:v]trim=start=2.5:duration=2.25,setpts=PTS-STARTPTS,$V[c1];\
-[0:v]trim=start=6.0:duration=1.45,setpts=PTS-STARTPTS,$V[c2];\
-[0:v]trim=start=11.6:duration=5.5,setpts=PTS-STARTPTS,$V[c3];\
-[0:v]trim=start=22.5:duration=7.1,setpts=PTS-STARTPTS,$V[c4];\
-[0:v]trim=start=34.0:duration=3.2,setpts=PTS-STARTPTS,$V[c5];\
-[0:v]trim=start=41.4:duration=3.5,setpts=PTS-STARTPTS,$V[c6];\
-[c1][c2][c3][c4][c5][c6]concat=n=6:v=1:a=0,tpad=start_duration=13.8:start_mode=add:color=black:stop_mode=clone:stop_duration=7,trim=0:43,setpts=PTS-STARTPTS[v]" \
+[0:v]trim=start=2.6:duration=9.2,setpts=PTS-STARTPTS,$V[c1];\
+[0:v]trim=start=11.8:duration=6.4,setpts=(PTS-STARTPTS)*1.109375,$V[c2];\
+[0:v]trim=start=35.6:duration=2.7,setpts=(PTS-STARTPTS)*1.333333,$V[c3];\
+[0:v]trim=start=44.2:duration=3.1,setpts=PTS-STARTPTS,$V[c4];\
+[c1][c2][c3][c4]concat=n=4:v=1:a=0,tpad=start_duration=13.8:start_mode=add:color=black:stop_mode=clone:stop_duration=7,trim=0:43,setpts=PTS-STARTPTS[v]" \
   -map "[v]" -an -c:v libx264 -pix_fmt yuv420p -crf 18 -preset medium "$OUT/screen-track.mp4"
 
 echo "Done: $OUT/voiceover.m4a and $OUT/screen-track.mp4"
